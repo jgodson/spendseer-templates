@@ -1,0 +1,18 @@
+import_template:
+  name: BMO Mastercard Statement CSV
+  target_type: transactions
+  source_type: csv
+  field_mappings:
+    date: Posting Date
+    description: Description
+    amount: Transaction Amount
+    category_name: Category
+  csv_options:
+    delimiter: ","
+    quote_char: '"'
+  transform_rules:
+    amount_sign: as_is
+    category_type_default: expense
+  metadata:
+    community_slug: bmo-mastercard-statement
+    community_version: v1

@@ -1,0 +1,19 @@
+import_template:
+  name: American Express Activity CSV
+  target_type: transactions
+  source_type: csv
+  field_mappings:
+    date: Date
+    description: Description
+    amount: Amount
+    category_name: Category
+  csv_options:
+    delimiter: ","
+    quote_char: '"'
+  transform_rules:
+    date_format: "%d %b %Y"
+    amount_sign: as_is
+    category_type_default: expense
+  metadata:
+    community_slug: amex-activity
+    community_version: v1

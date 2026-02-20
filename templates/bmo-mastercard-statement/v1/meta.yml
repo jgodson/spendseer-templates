@@ -1,0 +1,11 @@
+slug: bmo-mastercard-statement
+version: v1
+name: BMO Mastercard Statement CSV
+author: Jason Godson
+summary: Template for BMO Mastercard statement CSV exports.
+source:
+  institution: BMO
+  csv_export_path: Mastercard statement export -> CSV
+  notes:
+    - Remove leading non-CSV statement lines before import if present.
+    - Category can be blank; SpendSeer can apply your categorization rules.

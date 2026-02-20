@@ -1,0 +1,11 @@
+slug: budget-example
+version: v1
+name: Budget Example CSV
+author: Jason Godson
+summary: Mapping for budget spreadsheets with optional month splits.
+source:
+  institution: Any Spreadsheet
+  csv_export_path: Export your yearly budget sheet as CSV
+  notes:
+    - Works for monthly or yearly-only budget rows.
+    - Category Type is optional (defaults to expense).

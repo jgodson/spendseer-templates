@@ -1,0 +1,4 @@
+Year,Month,Amount,Category,Type
+2026,1,1200,Housing,expense
+2026,1,450,Groceries,expense
+2026,,9000,Emergency Fund,income

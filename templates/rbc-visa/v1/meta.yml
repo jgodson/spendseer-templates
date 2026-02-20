@@ -1,0 +1,12 @@
+slug: rbc-visa
+version: v1
+name: RBC Visa CSV
+author: Jason Godson
+summary: Template for RBC Visa transaction CSV exports.
+source:
+  institution: RBC
+  csv_export_path: Visa transaction export -> CSV
+  notes:
+    - Uses Transaction Date in month/day/year format.
+    - Amounts are sign-adjusted so charges and credits import correctly.
+    - Category can be blank; SpendSeer can apply your categorization rules.

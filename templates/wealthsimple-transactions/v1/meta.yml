@@ -1,0 +1,11 @@
+slug: wealthsimple-transactions
+version: v1
+name: Wealthsimple Transactions CSV
+author: Jason Godson
+summary: Template for Wealthsimple transaction CSV exports.
+source:
+  institution: Wealthsimple
+  csv_export_path: Account history -> Export CSV
+  notes:
+    - Amounts are sign-adjusted so spending and inflows import correctly.
+    - Category can be blank; SpendSeer can apply your categorization rules.

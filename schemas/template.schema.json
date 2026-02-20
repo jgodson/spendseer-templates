@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://spendseer.dev/schemas/community-template.schema.json",
+  "title": "Community Import Template",
+  "type": "object",
+  "required": ["import_template"],
+  "properties": {
+    "import_template": {
+      "type": "object",
+      "required": ["name", "target_type", "source_type", "field_mappings", "metadata"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "target_type": {
+          "type": "string",
+          "enum": ["transactions", "budgets"]
+        },
+        "source_type": {
+          "type": "string",
+          "const": "csv"
+        },
+        "field_mappings": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": { "type": "string" }
+        },
+        "csv_options": { "type": "object" },
+        "transform_rules": { "type": "object" },
+        "metadata": {
+          "type": "object",
+          "required": ["community_slug", "community_version"],
+          "properties": {
+            "community_slug": { "type": "string", "minLength": 1 },
+            "community_version": { "type": "string", "minLength": 1 },
+            "source_url": { "type": "string" }
+          },
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false
+}

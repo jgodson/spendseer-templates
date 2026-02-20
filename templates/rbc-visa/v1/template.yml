@@ -1,0 +1,19 @@
+import_template:
+  name: RBC Visa CSV
+  target_type: transactions
+  source_type: csv
+  field_mappings:
+    date: Transaction Date
+    description: Description 1
+    amount: CAD$
+    category_name: Category
+  csv_options:
+    delimiter: ","
+    quote_char: '"'
+  transform_rules:
+    date_format: "%m/%d/%Y"
+    amount_sign: negate
+    category_type_default: expense
+  metadata:
+    community_slug: rbc-visa
+    community_version: v1
