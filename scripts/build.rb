@@ -16,7 +16,7 @@ entries = TemplateCatalog.load_entries!(repo_root)
 
 dist_root = repo_root.join("dist")
 site_root = dist_root.join("site")
-assets_root = repo_root.join("site", "assets")
+static_site_root = repo_root.join("site")
 
 FileUtils.rm_rf(dist_root)
 FileUtils.mkdir_p(dist_root)
@@ -241,9 +241,8 @@ catalog_json = JSON.pretty_generate(catalog)
 File.write(dist_root.join("catalog.json"), catalog_json)
 File.write(site_root.join("catalog.json"), catalog_json)
 
-if assets_root.directory?
-  FileUtils.mkdir_p(site_root.join("assets"))
-  FileUtils.cp_r(assets_root.children.map(&:to_s), site_root.join("assets")) unless assets_root.children.empty?
+if static_site_root.directory?
+  FileUtils.cp_r(static_site_root.children.map(&:to_s), site_root) unless static_site_root.children.empty?
 end
 
 # ── Index page ──────────────────────────────────────────────────────────────
