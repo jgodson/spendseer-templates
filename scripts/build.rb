@@ -39,6 +39,266 @@ def h(text)
   CGI.escapeHTML(text.to_s)
 end
 
+def safe_markdown_url(url, relative_prefix: nil)
+  candidate = url.to_s.strip
+  return "#" if candidate.empty?
+  return "#" if candidate.match?(/\A(?:javascript|data):/i)
+  return candidate if candidate.match?(/\A(?:https?:\/\/|\/|#|mailto:)/i)
+
+  if relative_prefix && !relative_prefix.to_s.strip.empty?
+    normalized_prefix = relative_prefix.to_s.sub(%r{\A/+}, "").sub(%r{/+\z}, "")
+    return candidate if candidate.start_with?("#{normalized_prefix}/")
+    return "#{normalized_prefix}/#{candidate.sub(%r{\A/+}, "")}"
+  end
+
+  candidate
+end
+
+def markdown_inline_to_html(text, preserve_line_breaks: false, relative_prefix: nil)
+  html = h(text.to_s)
+
+  # Code first so other replacements don't process code content.
+  html.gsub!(/`([^`]+)`/) { "<code>#{$1}</code>" }
+
+  html.gsub!(/!\[([^\]]*)\]\(([^)\s]+)(?:\s+"([^"]+)")?\)/) do
+    alt = h($1.to_s)
+    src = h(safe_markdown_url($2, relative_prefix: relative_prefix))
+    title = $3.to_s.strip
+    title_attr = title.empty? ? "" : %( title="#{h(title)}")
+    %(<img class="note-image" src="#{src}" alt="#{alt}"#{title_attr} loading="lazy" decoding="async" />)
+  end
+
+  html.gsub!(/\[([^\]]+)\]\(([^)\s]+)(?:\s+"([^"]+)")?\)/) do
+    label = h($1.to_s)
+    href = h(safe_markdown_url($2, relative_prefix: relative_prefix))
+    title = $3.to_s.strip
+    title_attr = title.empty? ? "" : %( title="#{h(title)}")
+    %(<a href="#{href}"#{title_attr} target="_blank" rel="noopener noreferrer">#{label}</a>)
+  end
+
+  html.gsub!(/\*\*(.+?)\*\*/, "<strong>\\1</strong>")
+  html.gsub!(/(?<!\*)\*(?!\s)(.+?)(?<!\s)\*(?!\*)/, "<em>\\1</em>")
+  html.gsub!(/\r\n?|\n/, "<br>") if preserve_line_breaks
+  html
+end
+
+def markdown_table_cells(line)
+  stripped = line.to_s.strip
+  stripped = stripped.delete_prefix("|").delete_suffix("|")
+  stripped.split("|").map { |cell| cell.strip }
+end
+
+def markdown_table_divider?(line)
+  cells = markdown_table_cells(line)
+  return false if cells.empty?
+
+  cells.all? { |cell| cell.match?(/\A:?-{3,}:?\z/) }
+end
+
+def markdown_table_line?(line)
+  stripped = line.to_s.strip
+  !stripped.empty? && stripped.include?("|")
+end
+
+def markdown_block_starter?(lines, index)
+  line = lines[index].to_s
+  stripped = line.strip
+  return true if stripped.match?(/\A\#{1,6}\s+\S/)
+  return true if stripped.match?(/\A(?:[-*+]\s+|\d+\.\s+)/)
+  return true if stripped.start_with?(">")
+  return true if (index + 1) < lines.length && markdown_table_line?(line) && markdown_table_divider?(lines[index + 1])
+
+  false
+end
+
+def markdown_alignment_style(token)
+  case token.to_s.strip
+  when /\A:-+\z/
+    "left"
+  when /\A-+:\z/
+    "right"
+  when /\A:-+:\z/
+    "center"
+  else
+    nil
+  end
+end
+
+def render_markdown_table(lines, start_index, relative_prefix: nil)
+  header_cells = markdown_table_cells(lines[start_index])
+  align_tokens = markdown_table_cells(lines[start_index + 1])
+  alignments = align_tokens.map { |token| markdown_alignment_style(token) }
+
+  index = start_index + 2
+  body_rows = []
+  while index < lines.length
+    line = lines[index]
+    break unless markdown_table_line?(line)
+    break if markdown_table_divider?(line)
+
+    body_rows << markdown_table_cells(line)
+    index += 1
+  end
+
+  header_html = header_cells.each_with_index.map do |cell, cell_index|
+    align = alignments[cell_index]
+    align_attr = align.nil? ? "" : %( style="text-align: #{align};")
+    "<th#{align_attr}>#{markdown_inline_to_html(cell, relative_prefix: relative_prefix)}</th>"
+  end.join
+
+  body_html = body_rows.map do |row|
+    cells = (0...header_cells.length).map do |cell_index|
+      align = alignments[cell_index]
+      align_attr = align.nil? ? "" : %( style="text-align: #{align};")
+      "<td#{align_attr}>#{markdown_inline_to_html(row[cell_index].to_s, relative_prefix: relative_prefix)}</td>"
+    end.join
+    "<tr>#{cells}</tr>"
+  end.join
+
+  table_html = <<~HTML
+    <table class="note-table">
+      <thead><tr>#{header_html}</tr></thead>
+      <tbody>#{body_html}</tbody>
+    </table>
+  HTML
+
+  [table_html.strip, index]
+end
+
+def render_markdown_list(lines, start_index, relative_prefix: nil)
+  ordered = lines[start_index].to_s.strip.match?(/\A\d+\.\s+/)
+  matcher = ordered ? /\A\s*\d+\.\s+(.*)\z/ : /\A\s*[-*+]\s+(.*)\z/
+  tag = ordered ? "ol" : "ul"
+  items = []
+  index = start_index
+
+  while index < lines.length
+    line = lines[index]
+    break if line.to_s.strip.empty?
+
+    match = line.match(matcher)
+    break unless match
+
+    content_lines = [match[1]]
+    index += 1
+    while index < lines.length
+      continuation = lines[index]
+      break if continuation.to_s.strip.empty?
+      break if continuation.match(matcher)
+      break if markdown_block_starter?(lines, index)
+
+      content_lines << continuation.strip
+      index += 1
+    end
+
+    items << "<li>#{markdown_inline_to_html(content_lines.join(" "), relative_prefix: relative_prefix)}</li>"
+  end
+
+  ["<#{tag}>#{items.join}</#{tag}>", index]
+end
+
+def render_markdown_blockquote(lines, start_index, relative_prefix: nil)
+  quote_lines = []
+  index = start_index
+  while index < lines.length
+    match = lines[index].to_s.match(/\A\s*>\s?(.*)\z/)
+    break unless match
+
+    quote_lines << match[1]
+    index += 1
+  end
+
+  content_html = render_markdown_blocks(quote_lines.join("\n"), relative_prefix: relative_prefix)
+  ["<blockquote>#{content_html}</blockquote>", index]
+end
+
+def render_markdown_blocks(text, relative_prefix: nil)
+  lines = text.to_s.gsub(/\r\n?/, "\n").split("\n")
+  fragments = []
+  index = 0
+
+  while index < lines.length
+    line = lines[index]
+    stripped = line.to_s.strip
+
+    if stripped.empty?
+      index += 1
+      next
+    end
+
+    if (heading = stripped.match(/\A(\#{1,6})\s+(.+)\z/))
+      level = heading[1].length
+      fragments << "<h#{level}>#{markdown_inline_to_html(heading[2], relative_prefix: relative_prefix)}</h#{level}>"
+      index += 1
+      next
+    end
+
+    if (index + 1) < lines.length && markdown_table_line?(line) && markdown_table_divider?(lines[index + 1])
+      table_html, next_index = render_markdown_table(lines, index, relative_prefix: relative_prefix)
+      fragments << table_html
+      index = next_index
+      next
+    end
+
+    if stripped.match?(/\A(?:[-*+]\s+|\d+\.\s+)/)
+      list_html, next_index = render_markdown_list(lines, index, relative_prefix: relative_prefix)
+      fragments << list_html
+      index = next_index
+      next
+    end
+
+    if stripped.start_with?(">")
+      quote_html, next_index = render_markdown_blockquote(lines, index, relative_prefix: relative_prefix)
+      fragments << quote_html
+      index = next_index
+      next
+    end
+
+    paragraph_lines = [stripped]
+    index += 1
+    while index < lines.length
+      break if lines[index].to_s.strip.empty?
+      break if markdown_block_starter?(lines, index)
+
+      paragraph_lines << lines[index].strip
+      index += 1
+    end
+
+    fragments << "<p>#{markdown_inline_to_html(paragraph_lines.join(" "), relative_prefix: relative_prefix)}</p>"
+  end
+
+  fragments.join("\n")
+end
+
+def render_source_notes_html(notes, relative_prefix: nil)
+  Array(notes || []).map do |note|
+    content = render_markdown_blocks(note.to_s, relative_prefix: relative_prefix)
+    next "" if content.strip.empty?
+
+    %(<section class="note-block">#{content}</section>)
+  end.reject(&:empty?).join("\n              ")
+end
+
+MARKDOWN_IMAGE_EXTENSIONS = %w[.png .jpg .jpeg .gif .webp .svg .avif].freeze
+
+def copy_markdown_image_assets(source_dir:, dist_template_dir:, site_template_dir:)
+  Dir.glob(source_dir.join("**", "*").to_s).each do |path|
+    next unless File.file?(path)
+
+    ext = File.extname(path).downcase
+    next unless MARKDOWN_IMAGE_EXTENSIONS.include?(ext)
+
+    relative_path = Pathname(path).relative_path_from(source_dir)
+    dist_target = dist_template_dir.join(relative_path)
+    site_target = site_template_dir.join(relative_path)
+
+    FileUtils.mkdir_p(dist_target.dirname)
+    FileUtils.mkdir_p(site_target.dirname)
+    FileUtils.cp(path, dist_target)
+    FileUtils.cp(path, site_target)
+  end
+end
+
 def metadata_with_source(entry, source_url)
   metadata = TemplateCatalog.deep_stringify_hash(entry.template["metadata"] || {})
   metadata["community_slug"] = entry.slug
@@ -129,30 +389,6 @@ NAV_DETAIL = <<~HTML
   </nav>
 HTML
 
-FOOTER_HOME = <<~HTML
-  <footer class="site-footer">
-    <a class="catalog-link" href="catalog.json" target="_blank" rel="noopener">
-      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M1.5 8s2.3-4 6.5-4 6.5 4 6.5 4-2.3 4-6.5 4-6.5-4-6.5-4z"/>
-        <circle cx="8" cy="8" r="2.1"/>
-      </svg>
-      View catalog.json
-    </a>
-  </footer>
-HTML
-
-FOOTER_DETAIL = <<~HTML
-  <footer class="site-footer">
-    <a class="catalog-link" href="../../catalog.json" target="_blank" rel="noopener">
-      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M1.5 8s2.3-4 6.5-4 6.5 4 6.5 4-2.3 4-6.5 4-6.5-4-6.5-4z"/>
-        <circle cx="8" cy="8" r="2.1"/>
-      </svg>
-      View catalog.json
-    </a>
-  </footer>
-HTML
-
 entries_by_slug = entries.group_by(&:slug)
 
 catalog_templates = entries_by_slug.keys.sort.map do |slug|
@@ -177,6 +413,7 @@ catalog_templates = entries_by_slug.keys.sort.map do |slug|
     site_template_dir = site_root.join("templates", entry.slug, entry.version)
     FileUtils.mkdir_p(dist_template_dir)
     FileUtils.mkdir_p(site_template_dir)
+    copy_markdown_image_assets(source_dir: entry.source_dir, dist_template_dir: dist_template_dir, site_template_dir: site_template_dir)
 
     json_body = JSON.pretty_generate(payload)
     template_sha256 = Digest::SHA256.hexdigest(json_body)
@@ -256,7 +493,7 @@ index_cards = catalog_templates.map do |template|
 
   # Pick install URL from latest version
   install_url = template.fetch("versions").find { |v| v["version"] == latest_version }&.fetch("app_review_url", "#") || "#"
-  details_url = "templates/#{h(slug)}/"
+  details_url = "templates/#{slug}/"
 
   <<~HTML
     <article class="card">
@@ -264,11 +501,17 @@ index_cards = catalog_templates.map do |template|
         <span class="card__icon">#{icon}</span>
         <span class="badge #{badge_class}">#{h(target_type)}</span>
       </div>
-      <h2><a href="#{details_url}">#{h(template.fetch("name"))}</a></h2>
+      <h2><a href="#{h(details_url)}">#{h(template.fetch("name"))}</a></h2>
       <p class="card__desc">#{h(template.fetch("summary").to_s)}</p>
-      <div class="card__footer">
-        <span class="badge badge--version">#{h(latest_version)}</span>
-        <a class="btn btn--primary btn--sm" href="#{h(install_url)}" target="_blank" rel="noopener">
+      <div class="card__meta">
+        <span class="badge badge--version">Latest #{h(latest_version)}</span>
+      </div>
+      <div class="card__actions">
+        <div class="card__actions-secondary">
+          <a class="btn btn--ghost btn--sm" href="#{h(details_url)}">View Details</a>
+          <button class="btn btn--ghost btn--sm card-copy-btn" type="button" data-share-url="#{h(details_url)}">Copy Link</button>
+        </div>
+        <a class="btn btn--primary btn--sm card__install-btn" href="#{h(install_url)}" target="_blank" rel="noopener">
           Install in SpendSeer
           <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
             <path d="M3 8h10M9 4l4 4-4 4"/>
@@ -298,13 +541,74 @@ index_html = <<~HTML
           <h1>Community Templates</h1>
           <p>Ready-to-use CSV import templates for SpendSeer — one click to install.</p>
         </header>
-        <section class="grid">
-          #{index_cards}
-        </section>
-      </main>
-      #{FOOTER_HOME.strip}
-    </body>
-  </html>
+      <section class="grid">
+        #{index_cards}
+      </section>
+    </main>
+    <script>
+      function toAbsoluteUrl(url) {
+        if (!url) return "";
+        try {
+          return new URL(url, window.location.origin).toString();
+        } catch (_error) {
+          return url;
+        }
+      }
+
+      function copyText(text) {
+        if (!text) return Promise.reject(new Error("Missing text"));
+        if (navigator.clipboard && window.isSecureContext) {
+          return navigator.clipboard.writeText(text);
+        }
+
+        return new Promise((resolve, reject) => {
+          const textarea = document.createElement("textarea");
+          textarea.value = text;
+          textarea.setAttribute("readonly", "");
+          textarea.style.position = "fixed";
+          textarea.style.opacity = "0";
+          document.body.appendChild(textarea);
+          textarea.select();
+
+          try {
+            if (document.execCommand("copy")) {
+              resolve();
+            } else {
+              reject(new Error("Copy failed"));
+            }
+          } catch (error) {
+            reject(error);
+          } finally {
+            document.body.removeChild(textarea);
+          }
+        });
+      }
+
+      document.querySelectorAll(".card-copy-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const shareUrl = toAbsoluteUrl(btn.dataset.shareUrl || "");
+          if (!shareUrl) return;
+
+          const originalText = btn.textContent;
+          copyText(shareUrl)
+            .then(() => {
+              btn.textContent = "Copied!";
+              btn.classList.add("copied");
+            })
+            .catch(() => {
+              btn.textContent = "Copy failed";
+            })
+            .finally(() => {
+              setTimeout(() => {
+                btn.textContent = originalText;
+                btn.classList.remove("copied");
+              }, 1800);
+            });
+        });
+      });
+    </script>
+  </body>
+</html>
 HTML
 
 File.write(site_root.join("index.html"), index_html)
@@ -316,9 +620,16 @@ catalog_templates.each do |template|
   slug_dir = site_root.join("templates", slug)
   FileUtils.mkdir_p(slug_dir)
 
-  # Embed template data (strip example_csv_text from JS payload)
+  # Embed template data (strip example_csv_text and include pre-rendered notes markdown)
   payload_for_js = template.merge(
-    "versions" => template["versions"].map { |v| v.reject { |k, _| k == "example_csv_text" } }
+    "versions" => template["versions"].map do |version_payload|
+      version_for_js = version_payload.reject { |k, _| k == "example_csv_text" }
+      version_for_js["source_notes_html"] = render_source_notes_html(
+        version_for_js.dig("meta", "source", "notes"),
+        relative_prefix: version_for_js["version"]
+      )
+      version_for_js
+    end
   )
   payload_js = JSON.generate(payload_for_js)
 
@@ -350,8 +661,7 @@ catalog_templates.each do |template|
 
   # Source meta from latest version
   source_meta = latest_v.dig("meta", "source") || {}
-  source_notes = Array(source_meta["notes"] || [])
-  notes_html = source_notes.map { |note| "<li>#{h(note)}</li>" }.join("\n              ")
+  notes_html = render_source_notes_html(source_meta["notes"], relative_prefix: latest_v["version"])
 
   # CSV preview for latest version
   csv_preview_html = render_csv_preview(latest_v["example_csv_text"].to_s)
@@ -371,136 +681,116 @@ catalog_templates.each do |template|
       <body>
         #{NAV_DETAIL.strip}
         <main class="container detail-layout">
+          <section class="detail-shell">
+            <!-- Hero / CTA -->
+            <section class="hero-cta">
+              <div class="hero-cta__header">
+                <div class="hero-cta__main">
+                  <div class="hero-cta__badges">
+                    <span class="badge #{badge_class}">#{icon} #{h(target_type)}</span>
+                    <span class="badge badge--version" id="heroBadgeVersion">#{h(latest_version)}</span>
+                  </div>
+                  <h1>#{h(template.fetch("name"))}</h1>
+                  <p class="hero-cta__summary">#{h(template.fetch("summary").to_s)}</p>
+                </div>
+                <div class="hero-cta__side">
+                  <a class="btn btn--primary hero-cta__install" id="installBtn" href="#{h(latest_v['app_review_url'] || '#')}" target="_blank" rel="noopener">
+                    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M8 2v10M4 8l4 4 4-4"/><rect x="2" y="12" width="12" height="2" rx="1"/>
+                    </svg>
+                    Install in SpendSeer
+                  </a>
+                  <div class="version-selector hero-cta__version">
+                    <label for="versionSelect">Version</label>
+                    <select id="versionSelect">#{version_options}</select>
+                  </div>
+                </div>
+              </div>
+              <div class="hero-cta__meta">
+                <div class="hero-meta-row">
+                  <span class="hero-meta-row__label">Template ID</span>
+                  <span class="hero-meta-row__value"><code>#{h(slug)}</code></span>
+                </div>
+                <div class="hero-meta-row">
+                  <span class="hero-meta-row__label">Author</span>
+                  <span class="hero-meta-row__value" id="detailAuthor">#{h(latest_v['author'].to_s)}</span>
+                </div>
+                <div class="hero-meta-row">
+                  <span class="hero-meta-row__label">Template file</span>
+                  <span class="hero-meta-row__value"><a id="templateJsonLink" href="#{h(latest_v['source_url'] || '#')}" target="_blank" rel="noopener">Open JSON</a></span>
+                </div>
+                <div class="hero-meta-row hero-meta-row--share">
+                  <span class="hero-meta-row__label">Share Link</span>
+                  <div class="hero-meta-row__value">
+                    <div class="copy-snippet hero-copy-snippet" id="templateUrlSnippet">
+                      <code id="templateUrlCode">#{h(latest_v['details_url'] || template['details_url'] || '')}</code>
+                      <button class="btn btn--ghost btn--sm card-copy-btn share-link-btn" id="copyBtn" type="button">Copy</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="hero-cta__actions">
+                <a class="btn btn--ghost" id="exampleBtn" href="#csvPreviewPanel">View Example CSV</a>
+                <a class="btn btn--ghost" id="mappingBtn" href="#mappingPanel">View Column Mappings</a>
+              </div>
+            </section>
 
-          <!-- Hero / CTA -->
-          <section class="hero-cta">
-            <div class="hero-cta__badges">
-              <span class="badge #{badge_class}">#{icon} #{h(target_type)}</span>
-              <span class="badge badge--version" id="heroBadgeVersion">#{h(latest_version)}</span>
-            </div>
-            <h1>#{h(template.fetch("name"))}</h1>
-            <p class="hero-cta__summary">#{h(template.fetch("summary").to_s)}</p>
-            <div class="hero-cta__actions">
-              <a class="btn btn--primary" id="installBtn" href="#{h(latest_v['app_review_url'] || '#')}" target="_blank" rel="noopener">
-                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M8 2v10M4 8l4 4 4-4"/><rect x="2" y="12" width="12" height="2" rx="1"/>
-                </svg>
-                Install in SpendSeer
-              </a>
-              <a class="btn btn--ghost" id="exampleBtn" href="#csvPreviewPanel">View Example CSV</a>
-              <a class="btn btn--ghost" id="readmeBtn" href="#exportPanel">View Setup Notes</a>
-            </div>
+            <section class="detail-inner-grid">
+              <!-- Where to export -->
+              <div class="panel panel--full" id="exportPanel">
+                <div class="panel__header">
+                  <h2>Where to export</h2>
+                </div>
+                <div class="field-list" id="exportDetails">
+                  <div class="field-row">
+                    <span class="field-row__label">Institution</span>
+                    <span class="field-row__value" id="sourceInstitution">#{h(source_meta['institution'].to_s)}</span>
+                  </div>
+                  <div class="field-row">
+                    <span class="field-row__label">Export path</span>
+                    <span class="field-row__value" id="sourcePath">#{h(source_meta['csv_export_path'].to_s)}</span>
+                  </div>
+                </div>
+                <div class="notes-content" id="sourceNotes">
+                  #{notes_html}
+                </div>
+              </div>
+
+              <!-- Column mapping -->
+              <div class="panel panel--full" id="mappingPanel">
+                <div class="panel__header">
+                  <h2>Column mapping</h2>
+                </div>
+                <div class="panel__body--flush">
+                  <table id="mappingTable">
+                    <thead>
+                      <tr>
+                        <th>Your CSV column</th>
+                        <th></th>
+                        <th>SpendSeer field</th>
+                      </tr>
+                    </thead>
+                    <tbody id="mappingRows">
+                      #{mapping_rows}
+                    </tbody>
+                  </table>
+                  #{mapping_tip_html}
+                </div>
+              </div>
+
+              <!-- Example CSV preview -->
+              <div class="panel panel--full" id="csvPreviewPanel">
+                <div class="panel__header">
+                  <h2>Example CSV</h2>
+                  <a class="btn btn--ghost btn--sm" id="exampleDownloadBtn" href="#{h(latest_v['example_csv_url'] || '#')}" download="#{h("#{slug}-#{latest_version}-example.csv")}">Download</a>
+                </div>
+                <div class="panel__body--flush" id="csvPreviewBody">
+                  #{csv_preview_html}
+                </div>
+              </div>
+            </section>
           </section>
-
-          <!-- Template URL -->
-          <div class="panel">
-            <div class="panel__header">
-              <h2>Template URL</h2>
-            </div>
-            <div class="panel__body">
-              <div class="copy-snippet" id="templateUrlSnippet">
-                <code id="templateUrlCode">#{h(latest_v['source_url'] || '')}</code>
-                <button class="copy-btn" id="copyBtn" type="button">
-                  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="12" height="12">
-                    <rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M3 11H2a1 1 0 01-1-1V2a1 1 0 011-1h8a1 1 0 011 1v1"/>
-                  </svg>
-                  Copy
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <!-- Version selector -->
-          <div class="panel">
-            <div class="panel__header">
-              <h2>Version</h2>
-              <div class="version-selector">
-                <label for="versionSelect">Select version</label>
-                <select id="versionSelect">#{version_options}</select>
-              </div>
-            </div>
-          </div>
-
-          <!-- Column mapping -->
-          <div class="panel">
-            <div class="panel__header">
-              <h2>Column mapping</h2>
-            </div>
-            <div class="panel__body--flush">
-              <table id="mappingTable">
-                <thead>
-                  <tr>
-                    <th>Your CSV column</th>
-                    <th></th>
-                    <th>SpendSeer field</th>
-                  </tr>
-                </thead>
-                <tbody id="mappingRows">
-                  #{mapping_rows}
-                </tbody>
-              </table>
-              #{mapping_tip_html}
-            </div>
-          </div>
-
-          <!-- Example CSV preview -->
-          <div class="panel" id="csvPreviewPanel">
-            <div class="panel__header">
-              <h2>Example CSV</h2>
-              <a class="btn btn--ghost btn--sm" id="exampleDownloadBtn" href="#{h(latest_v['example_csv_url'] || '#')}" download="#{h("#{slug}-#{latest_version}-example.csv")}">Download</a>
-            </div>
-            <div class="panel__body--flush" id="csvPreviewBody">
-              #{csv_preview_html}
-            </div>
-          </div>
-
-          <!-- Where to export -->
-          <div class="panel" id="exportPanel">
-            <div class="panel__header">
-              <h2>Where to export</h2>
-            </div>
-            <div class="field-list" id="exportDetails">
-              <div class="field-row">
-                <span class="field-row__label">Institution</span>
-                <span class="field-row__value" id="sourceInstitution">#{h(source_meta['institution'].to_s)}</span>
-              </div>
-              <div class="field-row">
-                <span class="field-row__label">Export path</span>
-                <span class="field-row__value" id="sourcePath">#{h(source_meta['csv_export_path'].to_s)}</span>
-              </div>
-            </div>
-            <ul class="notes-list" id="sourceNotes">
-              #{notes_html}
-            </ul>
-          </div>
-
-          <!-- Template details / metadata -->
-          <div class="panel">
-            <div class="panel__header">
-              <h2>Details</h2>
-            </div>
-            <div class="field-list">
-              <div class="field-row">
-                <span class="field-row__label">Template ID</span>
-                <span class="field-row__value"><code>#{h(slug)}</code></span>
-              </div>
-              <div class="field-row">
-                <span class="field-row__label">Author</span>
-                <span class="field-row__value" id="detailAuthor">#{h(latest_v['author'].to_s)}</span>
-              </div>
-              <div class="field-row">
-                <span class="field-row__label">Version</span>
-                <span class="field-row__value"><code id="detailVersion">#{h(latest_version)}</code></span>
-              </div>
-              <div class="field-row">
-                <span class="field-row__label">Template file</span>
-                <span class="field-row__value"><a id="templateJsonLink" href="#{h(latest_v['source_url'] || '#')}" target="_blank" rel="noopener">Open JSON</a></span>
-              </div>
-            </div>
-          </div>
-
         </main>
-        #{FOOTER_DETAIL.strip}
 
         <script>
           const TEMPLATE = #{payload_js};
@@ -508,18 +798,15 @@ catalog_templates.each do |template|
           const versionSelect = document.getElementById("versionSelect");
           const heroBadgeVersion = document.getElementById("heroBadgeVersion");
           const installBtn = document.getElementById("installBtn");
-          const exampleBtn = document.getElementById("exampleBtn");
-          const readmeBtn = document.getElementById("readmeBtn");
           const exampleDownloadBtn = document.getElementById("exampleDownloadBtn");
           const mappingRows = document.getElementById("mappingRows");
           const sourceInstitution = document.getElementById("sourceInstitution");
           const sourcePath = document.getElementById("sourcePath");
           const sourceNotes = document.getElementById("sourceNotes");
           const detailAuthor = document.getElementById("detailAuthor");
-          const detailVersion = document.getElementById("detailVersion");
           const templateUrlCode = document.getElementById("templateUrlCode");
-          const templateJsonLink = document.getElementById("templateJsonLink");
           const copyBtn = document.getElementById("copyBtn");
+          const templateJsonLink = document.getElementById("templateJsonLink");
 
           function humanizeKey(key) {
             return key.replace(/_/g, " ").replace(/\\b\\w/g, c => c.toUpperCase());
@@ -534,13 +821,43 @@ catalog_templates.each do |template|
             }
           }
 
+          function copyText(text) {
+            if (!text) return Promise.reject(new Error("Missing text"));
+            if (navigator.clipboard && window.isSecureContext) {
+              return navigator.clipboard.writeText(text);
+            }
+
+            return new Promise((resolve, reject) => {
+              const textarea = document.createElement("textarea");
+              textarea.value = text;
+              textarea.setAttribute("readonly", "");
+              textarea.style.position = "fixed";
+              textarea.style.opacity = "0";
+              document.body.appendChild(textarea);
+              textarea.select();
+
+              try {
+                if (document.execCommand("copy")) {
+                  resolve();
+                } else {
+                  reject(new Error("Copy failed"));
+                }
+              } catch (error) {
+                reject(error);
+              } finally {
+                document.body.removeChild(textarea);
+              }
+            });
+          }
+
           function setLinks(details) {
             installBtn.href = details.app_review_url || "#";
             exampleDownloadBtn.href = details.example_csv_url || "#";
             exampleDownloadBtn.download = (TEMPLATE.slug || "template") + "-" + (details.version || "latest") + "-example.csv";
             const shareableSourceUrl = toAbsoluteUrl(details.source_url || "");
             templateJsonLink.href = shareableSourceUrl || "#";
-            templateUrlCode.textContent = shareableSourceUrl;
+            const shareableDetailsUrl = toAbsoluteUrl(details.details_url || TEMPLATE.details_url || "");
+            templateUrlCode.textContent = shareableDetailsUrl;
           }
 
           function renderMappings(details) {
@@ -560,12 +877,7 @@ catalog_templates.each do |template|
             const src = (details.meta && details.meta.source) || {};
             sourceInstitution.textContent = src.institution || "";
             sourcePath.textContent = src.csv_export_path || "";
-            sourceNotes.innerHTML = "";
-            (src.notes || []).forEach((note) => {
-              const li = document.createElement("li");
-              li.textContent = note;
-              sourceNotes.appendChild(li);
-            });
+            sourceNotes.innerHTML = details.source_notes_html || "";
           }
 
           function render(selectedVersion) {
@@ -574,7 +886,6 @@ catalog_templates.each do |template|
 
             heroBadgeVersion.textContent = details.version;
             detailAuthor.textContent = details.author || "Unknown";
-            detailVersion.textContent = details.version;
             setLinks(details);
             renderMappings(details);
             renderSource(details);
@@ -583,18 +894,25 @@ catalog_templates.each do |template|
           versionSelect.addEventListener("change", (e) => render(e.target.value));
           render(TEMPLATE.latest_version);
 
-          // Copy button
           copyBtn.addEventListener("click", () => {
             const text = templateUrlCode.textContent;
             if (!text) return;
-            navigator.clipboard.writeText(text).then(() => {
-              copyBtn.classList.add("copied");
-              copyBtn.textContent = "Copied!";
-              setTimeout(() => {
-                copyBtn.classList.remove("copied");
-                copyBtn.innerHTML = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M3 11H2a1 1 0 01-1-1V2a1 1 0 011-1h8a1 1 0 011 1v1"/></svg> Copy';
-              }, 2000);
-            });
+
+            const originalText = copyBtn.textContent;
+            copyText(text)
+              .then(() => {
+                copyBtn.textContent = "Copied!";
+                copyBtn.classList.add("copied");
+              })
+              .catch(() => {
+                copyBtn.textContent = "Copy failed";
+              })
+              .finally(() => {
+                setTimeout(() => {
+                  copyBtn.textContent = originalText;
+                  copyBtn.classList.remove("copied");
+                }, 1800);
+              });
           });
         </script>
       </body>
