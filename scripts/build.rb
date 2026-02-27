@@ -287,6 +287,7 @@ index_html = <<~HTML
       <meta name="viewport" content="width=device-width, initial-scale=1">
       <title>SpendSeer Community Templates</title>
       <link rel="icon" href="assets/favicon.ico?v=BUILD_VERSION" sizes="any">
+      <link rel="icon" href="assets/spendseer.png?v=BUILD_VERSION" type="image/png">
       <link rel="apple-touch-icon" href="assets/apple-touch-icon.png?v=BUILD_VERSION">
       <link rel="stylesheet" href="assets/site.css?v=BUILD_VERSION">
     </head>
@@ -363,6 +364,7 @@ catalog_templates.each do |template|
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>#{h(template.fetch("name"))} | SpendSeer Templates</title>
         <link rel="icon" href="../../assets/favicon.ico?v=BUILD_VERSION" sizes="any">
+        <link rel="icon" href="../../assets/spendseer.png?v=BUILD_VERSION" type="image/png">
         <link rel="apple-touch-icon" href="../../assets/apple-touch-icon.png?v=BUILD_VERSION">
         <link rel="stylesheet" href="../../assets/site.css?v=BUILD_VERSION">
       </head>
