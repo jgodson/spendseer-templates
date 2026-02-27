@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Template Not Found (404) | SpendSeer Templates</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Source+Sans+3:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="icon" href="/assets/favicon.ico?v=BUILD_VERSION" sizes="any">
+  <link rel="icon" href="/assets/favicon.svg?v=BUILD_VERSION" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png?v=BUILD_VERSION">
+  <style>
+    :root {
+      --bg: #070b15;
+      --surface: #121a2d;
+      --surface-strong: #182339;
+      --text: #edf2ff;
+      --muted: #b2bfd8;
+      --border: #2a3552;
+      --gold: #c8a34d;
+      --shadow: 0 22px 50px rgba(2, 6, 17, 0.55);
+      --font-heading: "Space Grotesk", sans-serif;
+      --font-body: "Source Sans 3", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: var(--font-body);
+      color: var(--text);
+      background:
+        radial-gradient(circle at 10% 10%, rgba(27, 53, 109, 0.44), transparent 36%),
+        radial-gradient(circle at 88% 15%, rgba(200, 163, 77, 0.24), transparent 30%),
+        linear-gradient(180deg, #0a1120 0%, var(--bg) 100%);
+      display: grid;
+      place-items: center;
+      padding: 20px;
+    }
+
+    .error-card {
+      width: min(960px, 100%);
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 20px;
+      background: rgba(18, 26, 45, 0.85);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+      padding: 20px;
+      backdrop-filter: blur(12px);
+    }
+
+    .content-panel {
+      border-radius: 18px;
+      background: rgba(24, 35, 57, 0.5);
+      border: 1px solid var(--border);
+      padding: 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      color: inherit;
+      text-decoration: none;
+      font-family: var(--font-heading);
+      font-weight: 700;
+      font-size: 1.2rem;
+    }
+
+    .brand-logo {
+      width: 38px;
+      height: 38px;
+      border-radius: 999px;
+      object-fit: cover;
+      box-shadow: 0 8px 18px rgba(200, 163, 77, 0.3);
+    }
+
+    .eyebrow {
+      margin: 0;
+      font-size: 0.75rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--gold);
+      font-weight: 700;
+      font-family: var(--font-heading);
+    }
+
+    h1 {
+      margin: 0;
+      font-family: var(--font-heading);
+      font-size: clamp(1.8rem, 4vw, 2.5rem);
+      line-height: 1.1;
+      letter-spacing: -0.01em;
+    }
+
+    .lead {
+      margin: 0;
+      color: var(--muted);
+      font-size: 1.05rem;
+      line-height: 1.6;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 8px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 44px;
+      padding: 0 20px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      font-weight: 700;
+      font-size: 0.9rem;
+      text-decoration: none;
+      font-family: var(--font-heading);
+      transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--gold), #a87c2b);
+      color: #0b111f;
+      border-color: #be9238;
+      box-shadow: 0 10px 24px rgba(200, 163, 77, 0.25);
+    }
+
+    .btn-secondary {
+      background: rgba(18, 26, 45, 0.92);
+      color: var(--text);
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+      border-color: #495779;
+    }
+
+    .btn-primary:hover {
+      border-color: #d7b264;
+      box-shadow: 0 14px 28px rgba(200, 163, 77, 0.32);
+    }
+
+    .help-box {
+      border-radius: 14px;
+      padding: 20px;
+      background: rgba(27, 53, 109, 0.15);
+      border: 1px solid rgba(200, 163, 77, 0.2);
+    }
+
+    .help-box h2 {
+      margin: 0 0 10px;
+      font-size: 0.9rem;
+      color: var(--gold);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .help-box ul {
+      margin: 0;
+      padding-left: 18px;
+      color: var(--muted);
+      line-height: 1.6;
+      font-size: 0.95rem;
+    }
+
+    .status-panel {
+      border-radius: 18px;
+      background: linear-gradient(160deg, #0d1526 0%, #111f39 100%);
+      border: 1px solid var(--border);
+      padding: 32px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .status-panel::after {
+      content: "";
+      position: absolute;
+      bottom: -40px;
+      right: -40px;
+      width: 180px;
+      height: 180px;
+      background: radial-gradient(circle, rgba(200, 163, 77, 0.15) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .status-chip {
+      display: inline-flex;
+      align-items: center;
+      width: fit-content;
+      border-radius: 999px;
+      padding: 5px 12px;
+      background: rgba(27, 53, 109, 0.4);
+      border: 1px solid rgba(120, 146, 190, 0.2);
+      color: #9fb2d6;
+      font-weight: 700;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    .status-code-wrap {
+      margin: 30px 0;
+    }
+
+    .status-code {
+      margin: 0;
+      font-family: var(--font-heading);
+      font-size: 6rem;
+      line-height: 0.8;
+      font-weight: 700;
+      color: #ffffff;
+      opacity: 0.9;
+    }
+
+    .status-name {
+      margin: 15px 0 10px;
+      font-weight: 700;
+      font-size: 1.1rem;
+      color: var(--text);
+    }
+
+    .status-copy {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.5;
+      font-size: 1rem;
+    }
+
+    .status-meta {
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      padding: 16px;
+    }
+
+    .status-meta-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--gold);
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .status-meta-value {
+      font-size: 0.9rem;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+
+    @media (max-width: 860px) {
+      .error-card {
+        grid-template-columns: 1fr;
+      }
+      .status-panel {
+        min-height: 300px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="error-card">
+    <div class="content-panel">
+      <a class="brand" href="/">
+        <img class="brand-logo" src="/assets/spendseer.png?v=BUILD_VERSION" alt="" aria-hidden="true">
+        <span>SpendSeer Templates</span>
+      </a>
+
+      <p class="eyebrow">404 Error</p>
+      <h1>Template not found.</h1>
+      <p class="lead">
+        This template might have been removed or renamed. Check the URL for typos, or browse the catalog
+        to find a similar ready-to-use CSV template.
+      </p>
+
+      <div class="actions">
+        <a class="btn btn-primary" href="/">Browse Catalog</a>
+        <a class="btn btn-secondary" href="https://app.spendseer.com">Open App</a>
+      </div>
+
+      <div class="help-box">
+        <h2>Try this next</h2>
+        <ul>
+          <li>Check the URL for typos or extra characters.</li>
+          <li>Head back to the template catalog to search again.</li>
+          <li>Visit our documentation for custom template guides.</li>
+        </ul>
+      </div>
+    </div>
+
+    <aside class="status-panel">
+      <span class="status-chip">HTTP Status</span>
+      <div class="status-code-wrap">
+        <p class="status-code">404</p>
+        <p class="status-name">Not Found</p>
+        <p class="status-copy">
+          SpendSeer could not find a template matching this request.
+        </p>
+      </div>
+      <div class="status-meta">
+        <div class="status-meta-label">Technical Details</div>
+        <div class="status-meta-value">
+          The server is reachable, but the requested path does not exist at this address.
+        </div>
+      </div>
+    </aside>
+  </main>
+</body>
+</html>

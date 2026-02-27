@@ -21,6 +21,7 @@ COPY --from=build /app/dist/site /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 RUN sed -i '/user  nginx;/d' /etc/nginx/nginx.conf && \
+    find /usr/share/nginx/html -name "*.html" -exec sed -i "s/BUILD_VERSION/$(date +%s)/g" {} + && \
     chown -R 10001:10001 /var/cache/nginx /var/log/nginx /etc/nginx/conf.d /usr/share/nginx/html && \
     touch /var/run/nginx.pid && \
     chown 10001:10001 /var/run/nginx.pid

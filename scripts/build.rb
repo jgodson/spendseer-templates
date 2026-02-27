@@ -100,7 +100,7 @@ end
 NAV_HOME = <<~HTML
   <nav class="site-nav">
     <a class="site-nav__brand" href="index.html">
-      <img class="brand-logo" src="assets/spendseer.png" alt="" aria-hidden="true" width="34" height="34" />
+      <img class="brand-logo" src="assets/spendseer.png?v=BUILD_VERSION" alt="" aria-hidden="true" width="34" height="34" />
       SpendSeer Templates
     </a>
     <div class="site-nav__actions">
@@ -113,7 +113,7 @@ HTML
 NAV_DETAIL = <<~HTML
   <nav class="site-nav">
     <a class="site-nav__brand" href="../../index.html">
-      <img class="brand-logo" src="../../assets/spendseer.png" alt="" aria-hidden="true" width="34" height="34" />
+      <img class="brand-logo" src="../../assets/spendseer.png?v=BUILD_VERSION" alt="" aria-hidden="true" width="34" height="34" />
       SpendSeer Templates
     </a>
     <div class="site-nav__actions">
@@ -286,10 +286,10 @@ index_html = <<~HTML
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1">
       <title>SpendSeer Community Templates</title>
-      <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
-      <link rel="icon" type="image/x-icon" href="assets/favicon.ico">
-      <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
-      <link rel="stylesheet" href="assets/site.css">
+      <link rel="icon" href="assets/favicon.ico?v=BUILD_VERSION" sizes="any">
+      <link rel="icon" href="assets/favicon.svg?v=BUILD_VERSION" type="image/svg+xml">
+      <link rel="apple-touch-icon" href="assets/apple-touch-icon.png?v=BUILD_VERSION">
+      <link rel="stylesheet" href="assets/site.css?v=BUILD_VERSION">
     </head>
     <body>
       #{NAV_HOME.strip}
@@ -363,10 +363,10 @@ catalog_templates.each do |template|
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>#{h(template.fetch("name"))} | SpendSeer Templates</title>
-        <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg">
-        <link rel="icon" type="image/x-icon" href="../../assets/favicon.ico">
-        <link rel="apple-touch-icon" href="../../assets/apple-touch-icon.png">
-        <link rel="stylesheet" href="../../assets/site.css">
+        <link rel="icon" href="../../assets/favicon.ico?v=BUILD_VERSION" sizes="any">
+        <link rel="icon" href="../../assets/favicon.svg?v=BUILD_VERSION" type="image/svg+xml">
+        <link rel="apple-touch-icon" href="../../assets/apple-touch-icon.png?v=BUILD_VERSION">
+        <link rel="stylesheet" href="../../assets/site.css?v=BUILD_VERSION">
       </head>
       <body>
         #{NAV_DETAIL.strip}
