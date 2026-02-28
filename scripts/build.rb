@@ -441,7 +441,7 @@ catalog_templates = entries_by_slug.keys.sort.map do |slug|
       "template_url" => join_url(site_base_url, template_json_rel),
       "readme_url" => join_url(site_base_url, readme_rel),
       "example_csv_url" => join_url(site_base_url, example_rel),
-      "details_url" => join_url(site_base_url, "templates/#{entry.slug}/"),
+      "details_url" => join_url(site_base_url, "templates/#{entry.slug}/#{entry.version}/"),
       "app_review_url" => "#{app_install_base_url.sub(%r{/+\z}, '')}/community_templates/install/new?slug=#{CGI.escape(entry.slug)}&version=#{CGI.escape(entry.version)}",
       "meta" => entry.meta,
       "import_template" => payload["import_template"],
@@ -492,7 +492,7 @@ index_cards = catalog_templates.map do |template|
 
   # Pick install URL from latest version
   install_url = template.fetch("versions").find { |v| v["version"] == latest_version }&.fetch("app_review_url", "#") || "#"
-  details_url = "templates/#{slug}/"
+  details_url = "templates/#{slug}/#{latest_version}/"
 
   <<~HTML
     <article class="card">
@@ -532,6 +532,7 @@ index_html = <<~HTML
       <link rel="icon" href="assets/spendseer.png?v=BUILD_VERSION" type="image/png">
       <link rel="apple-touch-icon" href="assets/apple-touch-icon.png?v=BUILD_VERSION">
       <link rel="stylesheet" href="assets/site.css?v=BUILD_VERSION">
+      <script src="assets/catalog-page.js?v=BUILD_VERSION" defer></script>
     </head>
     <body>
       #{NAV_HOME.strip}
@@ -544,68 +545,6 @@ index_html = <<~HTML
         #{index_cards}
       </section>
     </main>
-    <script>
-      function toAbsoluteUrl(url) {
-        if (!url) return "";
-        try {
-          return new URL(url, window.location.origin).toString();
-        } catch (_error) {
-          return url;
-        }
-      }
-
-      function copyText(text) {
-        if (!text) return Promise.reject(new Error("Missing text"));
-        if (navigator.clipboard && window.isSecureContext) {
-          return navigator.clipboard.writeText(text);
-        }
-
-        return new Promise((resolve, reject) => {
-          const textarea = document.createElement("textarea");
-          textarea.value = text;
-          textarea.setAttribute("readonly", "");
-          textarea.style.position = "fixed";
-          textarea.style.opacity = "0";
-          document.body.appendChild(textarea);
-          textarea.select();
-
-          try {
-            if (document.execCommand("copy")) {
-              resolve();
-            } else {
-              reject(new Error("Copy failed"));
-            }
-          } catch (error) {
-            reject(error);
-          } finally {
-            document.body.removeChild(textarea);
-          }
-        });
-      }
-
-      document.querySelectorAll(".card-copy-btn").forEach((btn) => {
-        btn.addEventListener("click", () => {
-          const shareUrl = toAbsoluteUrl(btn.dataset.shareUrl || "");
-          if (!shareUrl) return;
-
-          const originalText = btn.textContent;
-          copyText(shareUrl)
-            .then(() => {
-              btn.textContent = "Copied!";
-              btn.classList.add("copied");
-            })
-            .catch(() => {
-              btn.textContent = "Copy failed";
-            })
-            .finally(() => {
-              setTimeout(() => {
-                btn.textContent = originalText;
-                btn.classList.remove("copied");
-              }, 1800);
-            });
-        });
-      });
-    </script>
   </body>
 </html>
 HTML
@@ -619,325 +558,199 @@ catalog_templates.each do |template|
   slug_dir = site_root.join("templates", slug)
   FileUtils.mkdir_p(slug_dir)
 
-  # Embed template data (strip heavy source text and include pre-rendered README markdown)
-  payload_for_js = template.merge(
-    "versions" => template["versions"].map do |version_payload|
-      version_for_js = version_payload.reject { |k, _| k == "example_csv_text" || k == "readme_text" }
-      version_for_js["readme_html"] = render_readme_html(
-        version_payload["readme_text"],
-        relative_prefix: version_for_js["version"]
-      )
-      version_for_js
-    end
-  )
-  payload_js = JSON.generate(payload_for_js)
-
   target_type = template.fetch("target_type")
   icon = ICONS.fetch(target_type, "📄")
   badge_class = "badge--#{h(target_type)}"
   latest_version = template.fetch("latest_version")
-  latest_v = template["versions"].find { |v| v["version"] == latest_version } || template["versions"].first
+  template["versions"].each do |selected_v|
+    selected_version = selected_v.fetch("version")
+    selected_version_dir = slug_dir.join(selected_version)
+    FileUtils.mkdir_p(selected_version_dir)
 
-  # Build version option tags (server-rendered so page works without JS for basics)
-  version_options = template["versions"].map do |v|
-    selected = v["version"] == latest_version ? " selected" : ""
-    "<option value=\"#{h(v['version'])}\"#{selected}>#{h(v['version'])}</option>"
-  end.join
+    version_options = template["versions"].map do |v|
+      selected = v["version"] == selected_version ? " selected" : ""
+      "<option value=\"../#{h(v['version'])}/\"#{selected}>#{h(v['version'])}</option>"
+    end.join
 
-  # Build the initial field mapping rows (server-rendered for latest version)
-  field_mappings = latest_v.dig("import_template", "field_mappings") || {}
-  mapping_rows = field_mappings.keys.sort.map do |key|
-    csv_col = field_mappings[key]
-    "<tr><td><code>#{h(csv_col.to_s)}</code></td><td class=\"mapping-arrow\">→</td><td>#{h(humanize_field(key))}</td></tr>"
-  end.join("\n              ")
+    field_mappings = selected_v.dig("import_template", "field_mappings") || {}
+    mapping_rows = field_mappings.keys.sort.map do |key|
+      csv_col = field_mappings[key]
+      "<tr><td><code>#{h(csv_col.to_s)}</code></td><td class=\"mapping-arrow\">→</td><td>#{h(humanize_field(key))}</td></tr>"
+    end.join("\n              ")
 
-  mapping_tip_html =
-    if target_type == "transactions"
-      if field_mappings["category_name"].to_s.strip.empty?
-        '<div class="mapping-tip"><strong>Tip:</strong> No source category column is mapped. SpendSeer category rules classify transactions from description by default.</div>'
+    mapping_tip_html =
+      if target_type == "transactions"
+        if field_mappings["category_name"].to_s.strip.empty?
+          '<div class="mapping-tip"><strong>Tip:</strong> No source category column is mapped. SpendSeer category rules classify transactions from description by default.</div>'
+        else
+          '<div class="mapping-tip"><strong>Tip:</strong> Source category is mapped. For rows where source category is blank, SpendSeer falls back to description-based category rules.</div>'
+        end
       else
-        '<div class="mapping-tip"><strong>Tip:</strong> Source category is mapped. For rows where source category is blank, SpendSeer falls back to description-based category rules.</div>'
+        ""
       end
-    else
-      ""
-    end
 
-  # Source meta from latest version
-  source_meta = latest_v.dig("meta", "source") || {}
-  readme_html = render_readme_html(latest_v["readme_text"], relative_prefix: latest_v["version"])
+    source_meta = selected_v.dig("meta", "source") || {}
+    readme_html = render_readme_html(selected_v["readme_text"])
+    csv_preview_html = render_csv_preview(selected_v["example_csv_text"].to_s)
 
-  # CSV preview for latest version
-  csv_preview_html = render_csv_preview(latest_v["example_csv_text"].to_s)
+    detail_html = <<~HTML
+      <!doctype html>
+      <html lang="en">
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <title>#{h(template.fetch("name"))} | SpendSeer Templates</title>
+          <link rel="icon" href="../../assets/favicon.ico?v=BUILD_VERSION" sizes="any">
+          <link rel="icon" href="../../assets/spendseer.png?v=BUILD_VERSION" type="image/png">
+          <link rel="apple-touch-icon" href="../../assets/apple-touch-icon.png?v=BUILD_VERSION">
+          <link rel="stylesheet" href="../../assets/site.css?v=BUILD_VERSION">
+          <script src="../../assets/template-detail-page.js?v=BUILD_VERSION" defer></script>
+        </head>
+        <body>
+          #{NAV_DETAIL.strip}
+          <main class="container detail-layout">
+            <section class="detail-shell">
+              <!-- Hero / CTA -->
+              <section class="hero-cta">
+                <div class="hero-cta__header">
+                  <div class="hero-cta__main">
+                    <div class="hero-cta__badges">
+                      <span class="badge #{badge_class}">#{icon} #{h(target_type)}</span>
+                      <span class="badge badge--version">#{h(selected_version)}</span>
+                    </div>
+                    <h1>#{h(template.fetch("name"))}</h1>
+                    <p class="hero-cta__summary">#{h(template.fetch("summary").to_s)}</p>
+                  </div>
+                  <div class="hero-cta__side">
+                    <a class="btn btn--primary hero-cta__install" href="#{h(selected_v['app_review_url'] || '#')}" target="_blank" rel="noopener">
+                      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M8 2v10M4 8l4 4 4-4"/><rect x="2" y="12" width="12" height="2" rx="1"/>
+                      </svg>
+                      Install in SpendSeer
+                    </a>
+                    <div class="version-selector hero-cta__version">
+                      <label for="versionSelect">Version</label>
+                      <select id="versionSelect">#{version_options}</select>
+                    </div>
+                  </div>
+                </div>
+                <div class="hero-cta__meta">
+                  <div class="hero-meta-row">
+                    <span class="hero-meta-row__label">Template ID</span>
+                    <span class="hero-meta-row__value"><code>#{h(slug)}</code></span>
+                  </div>
+                  <div class="hero-meta-row">
+                    <span class="hero-meta-row__label">Author</span>
+                    <span class="hero-meta-row__value">#{h(selected_v['author'].to_s)}</span>
+                  </div>
+                  <div class="hero-meta-row">
+                    <span class="hero-meta-row__label">Template file</span>
+                    <span class="hero-meta-row__value"><a href="#{h(selected_v['source_url'] || '#')}" target="_blank" rel="noopener">Open JSON</a></span>
+                  </div>
+                  <div class="hero-meta-row hero-meta-row--share">
+                    <span class="hero-meta-row__label">Share Link</span>
+                    <div class="hero-meta-row__value">
+                      <div class="copy-snippet hero-copy-snippet">
+                        <code id="templateUrlCode">#{h(selected_v['details_url'] || template['details_url'] || '')}</code>
+                        <button class="btn btn--ghost btn--sm share-link-btn" id="copyBtn" type="button">Copy</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="hero-cta__actions">
+                  <a class="btn btn--ghost" href="#csvPreviewPanel">View Example CSV</a>
+                  <a class="btn btn--ghost" href="#mappingPanel">View Column Mappings</a>
+                  <a class="btn btn--ghost" href="#setupNotesPanel">View Export Instructions</a>
+                </div>
+              </section>
 
-  detail_html = <<~HTML
+              <section class="detail-inner-grid">
+                <!-- Where to export -->
+                <div class="panel panel--full" id="exportPanel">
+                  <div class="panel__header">
+                    <h2>Where to export</h2>
+                  </div>
+                  <div class="field-list" id="exportDetails">
+                    <div class="field-row">
+                      <span class="field-row__label">Institution</span>
+                      <span class="field-row__value">#{h(source_meta['institution'].to_s)}</span>
+                    </div>
+                    <div class="field-row">
+                      <span class="field-row__label">Export path</span>
+                      <span class="field-row__value">#{h(source_meta['csv_export_path'].to_s)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Export instructions -->
+                <div class="panel panel--full" id="setupNotesPanel">
+                  <div class="panel__header">
+                    <h2>Export Instructions</h2>
+                  </div>
+                  <div class="panel__body notes-content">
+                    #{readme_html}
+                  </div>
+                </div>
+
+                <!-- Column mapping -->
+                <div class="panel panel--full" id="mappingPanel">
+                  <div class="panel__header">
+                    <h2>Column mapping</h2>
+                  </div>
+                  <div class="panel__body--flush">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Your CSV column</th>
+                          <th></th>
+                          <th>SpendSeer field</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        #{mapping_rows}
+                      </tbody>
+                    </table>
+                    #{mapping_tip_html}
+                  </div>
+                </div>
+
+                <!-- Example CSV preview -->
+                <div class="panel panel--full" id="csvPreviewPanel">
+                  <div class="panel__header">
+                    <h2>Example CSV</h2>
+                    <a class="btn btn--ghost btn--sm" href="#{h(selected_v['example_csv_url'] || '#')}" download="#{h("#{slug}-#{selected_version}-example.csv")}">Download</a>
+                  </div>
+                  <div class="panel__body--flush">
+                    #{csv_preview_html}
+                  </div>
+                </div>
+              </section>
+            </section>
+          </main>
+        </body>
+      </html>
+    HTML
+
+    File.write(selected_version_dir.join("index.html"), detail_html)
+  end
+
+  latest_redirect = "#{latest_version}/"
+  latest_redirect_html = <<~HTML
     <!doctype html>
     <html lang="en">
       <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>#{h(template.fetch("name"))} | SpendSeer Templates</title>
-        <link rel="icon" href="../../assets/favicon.ico?v=BUILD_VERSION" sizes="any">
-        <link rel="icon" href="../../assets/spendseer.png?v=BUILD_VERSION" type="image/png">
-        <link rel="apple-touch-icon" href="../../assets/apple-touch-icon.png?v=BUILD_VERSION">
-        <link rel="stylesheet" href="../../assets/site.css?v=BUILD_VERSION">
+        <meta http-equiv="refresh" content="0;url=#{h(latest_redirect)}">
+        <link rel="canonical" href="#{h(latest_redirect)}">
+        <title>Redirecting…</title>
       </head>
       <body>
-        #{NAV_DETAIL.strip}
-        <main class="container detail-layout">
-          <section class="detail-shell">
-            <!-- Hero / CTA -->
-            <section class="hero-cta">
-              <div class="hero-cta__header">
-                <div class="hero-cta__main">
-                  <div class="hero-cta__badges">
-                    <span class="badge #{badge_class}">#{icon} #{h(target_type)}</span>
-                    <span class="badge badge--version" id="heroBadgeVersion">#{h(latest_version)}</span>
-                  </div>
-                  <h1>#{h(template.fetch("name"))}</h1>
-                  <p class="hero-cta__summary">#{h(template.fetch("summary").to_s)}</p>
-                </div>
-                <div class="hero-cta__side">
-                  <a class="btn btn--primary hero-cta__install" id="installBtn" href="#{h(latest_v['app_review_url'] || '#')}" target="_blank" rel="noopener">
-                    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M8 2v10M4 8l4 4 4-4"/><rect x="2" y="12" width="12" height="2" rx="1"/>
-                    </svg>
-                    Install in SpendSeer
-                  </a>
-                  <div class="version-selector hero-cta__version">
-                    <label for="versionSelect">Version</label>
-                    <select id="versionSelect">#{version_options}</select>
-                  </div>
-                </div>
-              </div>
-              <div class="hero-cta__meta">
-                <div class="hero-meta-row">
-                  <span class="hero-meta-row__label">Template ID</span>
-                  <span class="hero-meta-row__value"><code>#{h(slug)}</code></span>
-                </div>
-                <div class="hero-meta-row">
-                  <span class="hero-meta-row__label">Author</span>
-                  <span class="hero-meta-row__value" id="detailAuthor">#{h(latest_v['author'].to_s)}</span>
-                </div>
-                <div class="hero-meta-row">
-                  <span class="hero-meta-row__label">Template file</span>
-                  <span class="hero-meta-row__value"><a id="templateJsonLink" href="#{h(latest_v['source_url'] || '#')}" target="_blank" rel="noopener">Open JSON</a></span>
-                </div>
-                <div class="hero-meta-row hero-meta-row--share">
-                  <span class="hero-meta-row__label">Share Link</span>
-                  <div class="hero-meta-row__value">
-                    <div class="copy-snippet hero-copy-snippet" id="templateUrlSnippet">
-                      <code id="templateUrlCode">#{h(latest_v['details_url'] || template['details_url'] || '')}</code>
-                      <button class="btn btn--ghost btn--sm card-copy-btn share-link-btn" id="copyBtn" type="button">Copy</button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="hero-cta__actions">
-                <a class="btn btn--ghost" id="exampleBtn" href="#csvPreviewPanel">View Example CSV</a>
-                <a class="btn btn--ghost" id="mappingBtn" href="#mappingPanel">View Column Mappings</a>
-                <a class="btn btn--ghost" id="setupBtn" href="#setupNotesPanel">View Setup Notes</a>
-              </div>
-            </section>
-
-            <section class="detail-inner-grid">
-              <!-- Where to export -->
-              <div class="panel panel--full" id="exportPanel">
-                <div class="panel__header">
-                  <h2>Where to export</h2>
-                </div>
-                <div class="field-list" id="exportDetails">
-                  <div class="field-row">
-                    <span class="field-row__label">Institution</span>
-                    <span class="field-row__value" id="sourceInstitution">#{h(source_meta['institution'].to_s)}</span>
-                  </div>
-                  <div class="field-row">
-                    <span class="field-row__label">Export path</span>
-                    <span class="field-row__value" id="sourcePath">#{h(source_meta['csv_export_path'].to_s)}</span>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Setup notes -->
-              <div class="panel panel--full" id="setupNotesPanel">
-                <div class="panel__header">
-                  <h2>Setup Notes</h2>
-                  <a class="btn btn--ghost btn--sm" id="readmeSourceBtn" href="#{h(latest_v['readme_url'] || '#')}" target="_blank" rel="noopener">Open README</a>
-                </div>
-                <div class="panel__body notes-content" id="readmeContent">
-                  #{readme_html}
-                </div>
-              </div>
-
-              <!-- Column mapping -->
-              <div class="panel panel--full" id="mappingPanel">
-                <div class="panel__header">
-                  <h2>Column mapping</h2>
-                </div>
-                <div class="panel__body--flush">
-                  <table id="mappingTable">
-                    <thead>
-                      <tr>
-                        <th>Your CSV column</th>
-                        <th></th>
-                        <th>SpendSeer field</th>
-                      </tr>
-                    </thead>
-                    <tbody id="mappingRows">
-                      #{mapping_rows}
-                    </tbody>
-                  </table>
-                  #{mapping_tip_html}
-                </div>
-              </div>
-
-              <!-- Example CSV preview -->
-              <div class="panel panel--full" id="csvPreviewPanel">
-                <div class="panel__header">
-                  <h2>Example CSV</h2>
-                  <a class="btn btn--ghost btn--sm" id="exampleDownloadBtn" href="#{h(latest_v['example_csv_url'] || '#')}" download="#{h("#{slug}-#{latest_version}-example.csv")}">Download</a>
-                </div>
-                <div class="panel__body--flush" id="csvPreviewBody">
-                  #{csv_preview_html}
-                </div>
-              </div>
-            </section>
-          </section>
-        </main>
-
-        <script>
-          const TEMPLATE = #{payload_js};
-
-          const versionSelect = document.getElementById("versionSelect");
-          const heroBadgeVersion = document.getElementById("heroBadgeVersion");
-          const installBtn = document.getElementById("installBtn");
-          const exampleDownloadBtn = document.getElementById("exampleDownloadBtn");
-          const mappingRows = document.getElementById("mappingRows");
-          const sourceInstitution = document.getElementById("sourceInstitution");
-          const sourcePath = document.getElementById("sourcePath");
-          const readmeSourceBtn = document.getElementById("readmeSourceBtn");
-          const readmeContent = document.getElementById("readmeContent");
-          const detailAuthor = document.getElementById("detailAuthor");
-          const templateUrlCode = document.getElementById("templateUrlCode");
-          const copyBtn = document.getElementById("copyBtn");
-          const templateJsonLink = document.getElementById("templateJsonLink");
-
-          function humanizeKey(key) {
-            return key.replace(/_/g, " ").replace(/\\b\\w/g, c => c.toUpperCase());
-          }
-
-          function toAbsoluteUrl(url) {
-            if (!url) return "";
-            try {
-              return new URL(url, window.location.origin).toString();
-            } catch (_error) {
-              return url;
-            }
-          }
-
-          function copyText(text) {
-            if (!text) return Promise.reject(new Error("Missing text"));
-            if (navigator.clipboard && window.isSecureContext) {
-              return navigator.clipboard.writeText(text);
-            }
-
-            return new Promise((resolve, reject) => {
-              const textarea = document.createElement("textarea");
-              textarea.value = text;
-              textarea.setAttribute("readonly", "");
-              textarea.style.position = "fixed";
-              textarea.style.opacity = "0";
-              document.body.appendChild(textarea);
-              textarea.select();
-
-              try {
-                if (document.execCommand("copy")) {
-                  resolve();
-                } else {
-                  reject(new Error("Copy failed"));
-                }
-              } catch (error) {
-                reject(error);
-              } finally {
-                document.body.removeChild(textarea);
-              }
-            });
-          }
-
-          function setLinks(details) {
-            installBtn.href = details.app_review_url || "#";
-            exampleDownloadBtn.href = details.example_csv_url || "#";
-            exampleDownloadBtn.download = (TEMPLATE.slug || "template") + "-" + (details.version || "latest") + "-example.csv";
-            const shareableSourceUrl = toAbsoluteUrl(details.source_url || "");
-            templateJsonLink.href = shareableSourceUrl || "#";
-            const shareableDetailsUrl = toAbsoluteUrl(details.details_url || TEMPLATE.details_url || "");
-            templateUrlCode.textContent = shareableDetailsUrl;
-            readmeSourceBtn.href = details.readme_url || "#";
-          }
-
-          function renderMappings(details) {
-            mappingRows.innerHTML = "";
-            const mappings = (details.import_template && details.import_template.field_mappings) || {};
-            Object.keys(mappings).sort().forEach((key) => {
-              const tr = document.createElement("tr");
-              tr.innerHTML =
-                "<td><code>" + mappings[key] + "</code></td>" +
-                "<td class=\\"mapping-arrow\\">→</td>" +
-                "<td>" + humanizeKey(key) + "</td>";
-              mappingRows.appendChild(tr);
-            });
-          }
-
-          function renderSource(details) {
-            const src = (details.meta && details.meta.source) || {};
-            sourceInstitution.textContent = src.institution || "";
-            sourcePath.textContent = src.csv_export_path || "";
-          }
-
-          function renderReadme(details) {
-            readmeContent.innerHTML = details.readme_html || "";
-          }
-
-          function render(selectedVersion) {
-            const details = TEMPLATE.versions.find((v) => v.version === selectedVersion) || TEMPLATE.versions[0];
-            if (!details) return;
-
-            heroBadgeVersion.textContent = details.version;
-            detailAuthor.textContent = details.author || "Unknown";
-            setLinks(details);
-            renderMappings(details);
-            renderSource(details);
-            renderReadme(details);
-          }
-
-          versionSelect.addEventListener("change", (e) => render(e.target.value));
-          render(TEMPLATE.latest_version);
-
-          copyBtn.addEventListener("click", () => {
-            const text = templateUrlCode.textContent;
-            if (!text) return;
-
-            const originalText = copyBtn.textContent;
-            copyText(text)
-              .then(() => {
-                copyBtn.textContent = "Copied!";
-                copyBtn.classList.add("copied");
-              })
-              .catch(() => {
-                copyBtn.textContent = "Copy failed";
-              })
-              .finally(() => {
-                setTimeout(() => {
-                  copyBtn.textContent = originalText;
-                  copyBtn.classList.remove("copied");
-                }, 1800);
-              });
-          });
-        </script>
+        <p>Redirecting to <a href="#{h(latest_redirect)}">latest template version</a>.</p>
       </body>
     </html>
   HTML
-
-  File.write(slug_dir.join("index.html"), detail_html)
+  File.write(slug_dir.join("index.html"), latest_redirect_html)
 end
 
 puts "Built #{catalog_templates.size} templates (#{entries.size} versions)."
