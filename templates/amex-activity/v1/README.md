@@ -11,4 +11,4 @@ In Amex account activity, export transactions as CSV.
 ## Notes
 
 - Date format is `%d %b %Y` (for example `03 Jan 2026`).
-- `Category` is optional in this template.
+- Category is intentionally not mapped; SpendSeer category rules should classify using description.

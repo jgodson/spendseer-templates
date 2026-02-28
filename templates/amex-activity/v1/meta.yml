@@ -6,6 +6,3 @@ summary: Template for American Express activity CSV exports.
 source:
   institution: American Express
   csv_export_path: Account Activity -> Download CSV
-  notes:
-    - Date format is day-month-name-year (for example 03 Jan 2026).
-    - Category can be blank; SpendSeer can apply your categorization rules.

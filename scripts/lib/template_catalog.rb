@@ -25,6 +25,7 @@ module TemplateCatalog
   TARGET_TYPES = %w[transactions budgets].freeze
   CATEGORY_TYPES = %w[income expense savings].freeze
   SUPPORTED_AMOUNT_SIGNS = %w[as_is absolute negate].freeze
+  TRANSACTION_AMOUNT_MAPPING_KEYS = %w[amount amount_debit amount_credit].freeze
 
   module_function
 
@@ -173,11 +174,28 @@ module TemplateCatalog
       if target_type == "budgets"
         %w[year amount category_name]
       else
-        %w[date description amount category_name]
+        %w[date description]
       end
 
     required_mapping_keys.each do |key|
       errors << "#{relative}: field_mappings.#{key} is required" if field_mappings.to_h[key].to_s.strip.empty?
+    end
+
+    if target_type == "transactions"
+      transaction_mappings = normalize_hash(field_mappings)
+      mapped_amount_keys = mapped_transaction_amount_keys(transaction_mappings)
+      if mapped_amount_keys.empty?
+        errors << "#{relative}: transactions must include one amount mapping: field_mappings.amount, field_mappings.amount_debit, or field_mappings.amount_credit"
+      end
+
+      mapped_category_column = transaction_mappings["category_name"].to_s.strip
+      use_source_category = truthy?(metadata["use_source_category"])
+      if use_source_category && mapped_category_column.empty?
+        errors << "#{relative}: metadata.use_source_category: true requires field_mappings.category_name for transactions"
+      end
+      if !mapped_category_column.empty? && !use_source_category
+        errors << "#{relative}: field_mappings.category_name is opt-in for transactions; set metadata.use_source_category: true only when source categories are reliable"
+      end
     end
 
     validate_template_compatibility(errors, relative: relative, template: template, example_csv: example_csv)
@@ -237,19 +255,26 @@ module TemplateCatalog
     end
 
     field_mappings = normalize_hash(template["field_mappings"])
-    required_fields =
-      if template["target_type"].to_s == "budgets"
-        %w[year amount category_name]
-      else
-        %w[date description amount category_name]
+    target_type = template["target_type"].to_s
+    if target_type == "budgets"
+      %w[year amount category_name].each do |field|
+        validate_mapped_field_header(errors, relative: relative, headers: headers, field_mappings: field_mappings, field: field)
       end
+      return
+    end
 
-    required_fields.each do |field|
-      mapped_column = field_mappings[field].to_s.strip
-      next if mapped_column.empty?
-      next if headers.include?(mapped_column)
+    %w[date description].each do |field|
+      validate_mapped_field_header(errors, relative: relative, headers: headers, field_mappings: field_mappings, field: field)
+    end
 
-      errors << "#{relative}: example.csv is missing mapped column '#{mapped_column}' for field '#{field}'"
+    mapped_amount_keys = mapped_transaction_amount_keys(field_mappings)
+    if mapped_amount_keys.empty?
+      errors << "#{relative}: transactions must include one amount mapping: field_mappings.amount, field_mappings.amount_debit, or field_mappings.amount_credit"
+      return
+    end
+
+    mapped_amount_keys.each do |field|
+      validate_mapped_field_header(errors, relative: relative, headers: headers, field_mappings: field_mappings, field: field)
     end
   rescue CSV::MalformedCSVError => e
     errors << "#{relative}: example.csv is invalid CSV (#{e.class})"
@@ -273,5 +298,23 @@ module TemplateCatalog
 
   def normalize_hash(value)
     value.is_a?(Hash) ? value.transform_keys(&:to_s) : {}
+  end
+
+  def mapped_transaction_amount_keys(field_mappings)
+    TRANSACTION_AMOUNT_MAPPING_KEYS.select { |key| !field_mappings[key].to_s.strip.empty? }
+  end
+
+  def validate_mapped_field_header(errors, relative:, headers:, field_mappings:, field:)
+    mapped_column = field_mappings[field].to_s.strip
+    return if mapped_column.empty?
+    return if headers.include?(mapped_column)
+
+    errors << "#{relative}: example.csv is missing mapped column '#{mapped_column}' for field '#{field}'"
+  end
+
+  def truthy?(value)
+    return true if value == true
+
+    value.to_s.strip.casecmp("true").zero?
   end
 end

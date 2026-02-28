@@ -11,4 +11,4 @@ Export your statement activity from BMO as CSV.
 ## Notes
 
 - If your export starts with non-CSV preface lines, remove those lines first.
-- `Category` is optional in this template.
+- Category is intentionally not mapped; SpendSeer category rules should classify using description.

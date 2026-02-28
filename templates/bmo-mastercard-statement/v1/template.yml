@@ -6,7 +6,6 @@ import_template:
     date: Posting Date
     description: Description
     amount: Transaction Amount
-    category_name: Category
   csv_options:
     delimiter: ","
     quote_char: '"'

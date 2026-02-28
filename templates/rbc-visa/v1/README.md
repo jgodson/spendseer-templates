@@ -12,4 +12,4 @@ Export transaction history from RBC Visa as CSV.
 
 - Date format is `%m/%d/%Y`.
 - Amounts are sign-adjusted so charges and credits import correctly.
-- `Category` is optional in this template.
+- Category is intentionally not mapped; SpendSeer category rules should classify using description.

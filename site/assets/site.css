@@ -609,6 +609,7 @@ h3 {
 
 #csvPreviewPanel,
 #mappingPanel,
+#setupNotesPanel,
 #exportPanel {
   scroll-margin-top: 7rem;
 }
@@ -852,6 +853,10 @@ code {
 .note-block p {
   margin: 0 0 0.55rem;
   color: var(--text-muted);
+}
+
+.readme-block h1 {
+  font-size: 1.2rem;
 }
 
 .note-block h1,

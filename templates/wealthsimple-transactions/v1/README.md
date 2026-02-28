@@ -11,4 +11,4 @@ Export transactions from Wealthsimple as CSV.
 ## Notes
 
 - Amounts are sign-adjusted so spending and inflows import correctly.
-- `Category` is optional in this template.
+- Category is intentionally not mapped; SpendSeer category rules should classify using description.

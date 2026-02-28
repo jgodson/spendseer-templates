@@ -270,13 +270,11 @@ def render_markdown_blocks(text, relative_prefix: nil)
   fragments.join("\n")
 end
 
-def render_source_notes_html(notes, relative_prefix: nil)
-  Array(notes || []).map do |note|
-    content = render_markdown_blocks(note.to_s, relative_prefix: relative_prefix)
-    next "" if content.strip.empty?
+def render_readme_html(readme_text, relative_prefix: nil)
+  content = render_markdown_blocks(readme_text.to_s, relative_prefix: relative_prefix)
+  return "" if content.strip.empty?
 
-    %(<section class="note-block">#{content}</section>)
-  end.reject(&:empty?).join("\n              ")
+  %(<section class="note-block readme-block">#{content}</section>)
 end
 
 MARKDOWN_IMAGE_EXTENSIONS = %w[.png .jpg .jpeg .gif .webp .svg .avif].freeze
@@ -447,7 +445,8 @@ catalog_templates = entries_by_slug.keys.sort.map do |slug|
       "app_review_url" => "#{app_install_base_url.sub(%r{/+\z}, '')}/community_templates/install/new?slug=#{CGI.escape(entry.slug)}&version=#{CGI.escape(entry.version)}",
       "meta" => entry.meta,
       "import_template" => payload["import_template"],
-      "example_csv_text" => example_csv
+      "example_csv_text" => example_csv,
+      "readme_text" => readme_text
     }
   end
 
@@ -465,7 +464,7 @@ end
 
 # Catalog JSON (strip example_csv_text from public catalog)
 catalog_for_json = catalog_templates.map do |t|
-  t.merge("versions" => t["versions"].map { |v| v.reject { |k, _| k == "example_csv_text" } })
+  t.merge("versions" => t["versions"].map { |v| v.reject { |k, _| k == "example_csv_text" || k == "readme_text" } })
 end
 
 catalog = {
@@ -620,12 +619,12 @@ catalog_templates.each do |template|
   slug_dir = site_root.join("templates", slug)
   FileUtils.mkdir_p(slug_dir)
 
-  # Embed template data (strip example_csv_text and include pre-rendered notes markdown)
+  # Embed template data (strip heavy source text and include pre-rendered README markdown)
   payload_for_js = template.merge(
     "versions" => template["versions"].map do |version_payload|
-      version_for_js = version_payload.reject { |k, _| k == "example_csv_text" }
-      version_for_js["source_notes_html"] = render_source_notes_html(
-        version_for_js.dig("meta", "source", "notes"),
+      version_for_js = version_payload.reject { |k, _| k == "example_csv_text" || k == "readme_text" }
+      version_for_js["readme_html"] = render_readme_html(
+        version_payload["readme_text"],
         relative_prefix: version_for_js["version"]
       )
       version_for_js
@@ -654,14 +653,18 @@ catalog_templates.each do |template|
 
   mapping_tip_html =
     if target_type == "transactions"
-      '<div class="mapping-tip"><strong>Tip:</strong> Leave <code>Category</code> blank in your CSV so SpendSeer category rules can auto-match.</div>'
+      if field_mappings["category_name"].to_s.strip.empty?
+        '<div class="mapping-tip"><strong>Tip:</strong> No source category column is mapped. SpendSeer category rules classify transactions from description by default.</div>'
+      else
+        '<div class="mapping-tip"><strong>Tip:</strong> Source category is mapped. For rows where source category is blank, SpendSeer falls back to description-based category rules.</div>'
+      end
     else
       ""
     end
 
   # Source meta from latest version
   source_meta = latest_v.dig("meta", "source") || {}
-  notes_html = render_source_notes_html(source_meta["notes"], relative_prefix: latest_v["version"])
+  readme_html = render_readme_html(latest_v["readme_text"], relative_prefix: latest_v["version"])
 
   # CSV preview for latest version
   csv_preview_html = render_csv_preview(latest_v["example_csv_text"].to_s)
@@ -732,6 +735,7 @@ catalog_templates.each do |template|
               <div class="hero-cta__actions">
                 <a class="btn btn--ghost" id="exampleBtn" href="#csvPreviewPanel">View Example CSV</a>
                 <a class="btn btn--ghost" id="mappingBtn" href="#mappingPanel">View Column Mappings</a>
+                <a class="btn btn--ghost" id="setupBtn" href="#setupNotesPanel">View Setup Notes</a>
               </div>
             </section>
 
@@ -751,8 +755,16 @@ catalog_templates.each do |template|
                     <span class="field-row__value" id="sourcePath">#{h(source_meta['csv_export_path'].to_s)}</span>
                   </div>
                 </div>
-                <div class="notes-content" id="sourceNotes">
-                  #{notes_html}
+              </div>
+
+              <!-- Setup notes -->
+              <div class="panel panel--full" id="setupNotesPanel">
+                <div class="panel__header">
+                  <h2>Setup Notes</h2>
+                  <a class="btn btn--ghost btn--sm" id="readmeSourceBtn" href="#{h(latest_v['readme_url'] || '#')}" target="_blank" rel="noopener">Open README</a>
+                </div>
+                <div class="panel__body notes-content" id="readmeContent">
+                  #{readme_html}
                 </div>
               </div>
 
@@ -802,7 +814,8 @@ catalog_templates.each do |template|
           const mappingRows = document.getElementById("mappingRows");
           const sourceInstitution = document.getElementById("sourceInstitution");
           const sourcePath = document.getElementById("sourcePath");
-          const sourceNotes = document.getElementById("sourceNotes");
+          const readmeSourceBtn = document.getElementById("readmeSourceBtn");
+          const readmeContent = document.getElementById("readmeContent");
           const detailAuthor = document.getElementById("detailAuthor");
           const templateUrlCode = document.getElementById("templateUrlCode");
           const copyBtn = document.getElementById("copyBtn");
@@ -858,6 +871,7 @@ catalog_templates.each do |template|
             templateJsonLink.href = shareableSourceUrl || "#";
             const shareableDetailsUrl = toAbsoluteUrl(details.details_url || TEMPLATE.details_url || "");
             templateUrlCode.textContent = shareableDetailsUrl;
+            readmeSourceBtn.href = details.readme_url || "#";
           }
 
           function renderMappings(details) {
@@ -877,7 +891,10 @@ catalog_templates.each do |template|
             const src = (details.meta && details.meta.source) || {};
             sourceInstitution.textContent = src.institution || "";
             sourcePath.textContent = src.csv_export_path || "";
-            sourceNotes.innerHTML = details.source_notes_html || "";
+          }
+
+          function renderReadme(details) {
+            readmeContent.innerHTML = details.readme_html || "";
           }
 
           function render(selectedVersion) {
@@ -889,6 +906,7 @@ catalog_templates.each do |template|
             setLinks(details);
             renderMappings(details);
             renderSource(details);
+            renderReadme(details);
           }
 
           versionSelect.addEventListener("change", (e) => render(e.target.value));

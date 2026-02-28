@@ -35,6 +35,15 @@ Each version folder must contain:
   - `community_version`
 - `target_type` must be `transactions` or `budgets`.
 - `source_type` must be `csv`.
+- For `transactions` templates, required mappings are:
+  - `date`
+  - `description`
+  - one of `amount`, `amount_debit`, or `amount_credit` (default to `amount` when available)
+- Default transaction behavior is description-based categorization:
+  - do not map `category_name` unless you explicitly trust the source categories
+  - when source category is missing or blank, SpendSeer category rules should classify from `description`
+- `category_name` should only be mapped for high-quality source categories, and must include:
+  - `metadata.use_source_category: true` in `template.yml`
 
 ## 5. Run checks locally
 

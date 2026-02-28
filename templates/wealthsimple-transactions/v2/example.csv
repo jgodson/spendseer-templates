@@ -1,0 +1,4 @@
+transaction_date,post_date,type,details,amount,currency
+2025-12-25,2025-12-25,Purchase,AMAZON.CA*XU4H836R3,200.00,CAD
+2026-01-16,2026-01-16,Refund initiated,AMAZON* CD5QV5FX3,-15.70,CAD
+2026-01-14,2026-01-14,Payment,From chequing account,-4214.94,CAD

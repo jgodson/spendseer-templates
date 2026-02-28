@@ -31,6 +31,14 @@ Contributors edit YAML/CSV source files, and CI validates + builds JSON and stat
 - Detail pages include a version selector.
 - Latest version is selected by semantic sort.
 
+## Category defaults (transactions)
+
+- Required transaction mappings are `date`, `description`, and one of `amount`, `amount_debit`, or `amount_credit`.
+- Default to a single `amount` mapping when your CSV includes a net amount column.
+- `category_name` is optional and should be used only for reliable, pre-normalized source categories.
+- When source category is missing/blank, SpendSeer category/skip rules should classify from `description`.
+- If `category_name` is mapped, set `metadata.use_source_category: true`.
+
 ## Local development
 
 Validate template sources:
