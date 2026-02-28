@@ -370,12 +370,12 @@ HTML
 
 NAV_DETAIL = <<~HTML
   <nav class="site-nav">
-    <a class="site-nav__brand" href="../../index.html">
-      <img class="brand-logo" src="../../assets/spendseer.png?v=BUILD_VERSION" alt="" aria-hidden="true" width="34" height="34" />
+    <a class="site-nav__brand" href="../../../index.html">
+      <img class="brand-logo" src="../../../assets/spendseer.png?v=BUILD_VERSION" alt="" aria-hidden="true" width="34" height="34" />
       SpendSeer Templates
     </a>
     <div class="site-nav__actions">
-      <a class="site-nav__back" href="../../index.html">
+      <a class="site-nav__back" href="../../../index.html">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
           <path d="M10 3L5 8l5 5"/>
         </svg>
@@ -600,11 +600,11 @@ catalog_templates.each do |template|
           <meta charset="utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1">
           <title>#{h(template.fetch("name"))} | SpendSeer Templates</title>
-          <link rel="icon" href="../../assets/favicon.ico?v=BUILD_VERSION" sizes="any">
-          <link rel="icon" href="../../assets/spendseer.png?v=BUILD_VERSION" type="image/png">
-          <link rel="apple-touch-icon" href="../../assets/apple-touch-icon.png?v=BUILD_VERSION">
-          <link rel="stylesheet" href="../../assets/site.css?v=BUILD_VERSION">
-          <script src="../../assets/template-detail-page.js?v=BUILD_VERSION" defer></script>
+          <link rel="icon" href="../../../assets/favicon.ico?v=BUILD_VERSION" sizes="any">
+          <link rel="icon" href="../../../assets/spendseer.png?v=BUILD_VERSION" type="image/png">
+          <link rel="apple-touch-icon" href="../../../assets/apple-touch-icon.png?v=BUILD_VERSION">
+          <link rel="stylesheet" href="../../../assets/site.css?v=BUILD_VERSION">
+          <script src="../../../assets/template-detail-page.js?v=BUILD_VERSION" defer></script>
         </head>
         <body>
           #{NAV_DETAIL.strip}
