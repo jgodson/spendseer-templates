@@ -1,17 +1,18 @@
 import_template:
-  name: Wealthsimple Transactions
+  name: Wealthsimple Credit Card
   target_type: transactions
   source_type: csv
   field_mappings:
-    date: Date
-    description: Description
-    amount: Amount
+    date: transaction_date
+    description: details
+    amount: amount
   csv_options:
     delimiter: ","
     quote_char: '"'
   transform_rules:
+    date_format: "%Y-%m-%d"
     amount_sign: negate
     category_type_default: expense
   metadata:
-    community_slug: wealthsimple-transactions
-    community_version: v1
+    community_slug: wealthsimple-credit-card
+    community_version: v2

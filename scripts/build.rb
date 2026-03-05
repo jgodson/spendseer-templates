@@ -70,10 +70,13 @@ def markdown_inline_to_html(text, preserve_line_breaks: false, relative_prefix: 
 
   html.gsub!(/\[([^\]]+)\]\(([^)\s]+)(?:\s+"([^"]+)")?\)/) do
     label = h($1.to_s)
-    href = h(safe_markdown_url($2, relative_prefix: relative_prefix))
+    raw_url = $2.to_s
+    href = h(safe_markdown_url(raw_url, relative_prefix: relative_prefix))
     title = $3.to_s.strip
     title_attr = title.empty? ? "" : %( title="#{h(title)}")
-    %(<a href="#{href}"#{title_attr} target="_blank" rel="noopener noreferrer">#{label}</a>)
+    external = raw_url.match?(/\Ahttps?:\/\//i)
+    target_attr = external ? %( target="_blank" rel="noopener noreferrer") : ""
+    %(<a href="#{href}"#{title_attr}#{target_attr}>#{label}</a>)
   end
 
   html.gsub!(/\*\*(.+?)\*\*/, "<strong>\\1</strong>")
@@ -106,6 +109,7 @@ def markdown_block_starter?(lines, index)
   return true if stripped.match?(/\A\#{1,6}\s+\S/)
   return true if stripped.match?(/\A(?:[-*+]\s+|\d+\.\s+)/)
   return true if stripped.start_with?(">")
+  return true if stripped.start_with?("```")
   return true if (index + 1) < lines.length && markdown_table_line?(line) && markdown_table_divider?(lines[index + 1])
 
   false
@@ -254,6 +258,22 @@ def render_markdown_blocks(text, relative_prefix: nil)
       next
     end
 
+    if stripped.start_with?("```")
+      lang = h(stripped.sub(/\A```/, "").strip)
+      lang_class = lang.empty? ? "" : %( class="language-#{lang}")
+      fence_lines = []
+      index += 1
+      while index < lines.length
+        break if lines[index].to_s.strip == "```"
+        fence_lines << lines[index]
+        index += 1
+      end
+      index += 1 # skip closing ```
+      code_text = CGI.escapeHTML(fence_lines.join("\n"))
+      fragments << %(<div class="code-block"><button class="code-copy-btn btn btn--ghost btn--sm" type="button">Copy</button><pre><code#{lang_class}>#{code_text}</code></pre></div>)
+      next
+    end
+
     paragraph_lines = [stripped]
     index += 1
     while index < lines.length
@@ -316,24 +336,24 @@ ICONS = {
   "budgets" => "📊"
 }.freeze
 
-# Parse a CSV string and return [headers, rows]
-def parse_example_csv(csv_text)
-  return [[], []] if csv_text.nil? || csv_text.strip.empty?
-  table = CSV.parse(csv_text.strip, headers: true)
-  [table.headers, table.map(&:fields)]
+# Parse a CSV string and return all rows (no header treatment)
+def parse_example_csv(csv_text, skip_rows: 0)
+  return [] if csv_text.nil? || csv_text.strip.empty?
+  lines = csv_text.strip.split("\n")
+  lines = lines.drop(skip_rows) if skip_rows > 0
+  CSV.parse(lines.join("\n"))
 rescue StandardError
-  [[], []]
+  []
 end
 
 # Render a CSV as an HTML table for inline preview
-def render_csv_preview(csv_text)
-  headers, rows = parse_example_csv(csv_text)
-  return "" if headers.empty?
+def render_csv_preview(csv_text, skip_rows: 0)
+  rows = parse_example_csv(csv_text, skip_rows: skip_rows)
+  return "" if rows.empty?
 
-  th_cells = headers.map { |h_| "<th>#{CGI.escapeHTML(h_.to_s)}</th>" }.join
   tr_rows = rows.map do |row|
     tds = row.map do |cell|
-      if cell.nil? || cell.strip.empty?
+      if cell.nil? || cell.to_s.strip.empty?
         "<td><span class=\"csv-empty-cell\">empty</span></td>"
       else
         "<td>#{CGI.escapeHTML(cell.to_s)}</td>"
@@ -345,7 +365,6 @@ def render_csv_preview(csv_text)
   <<~HTML
     <div class="csv-preview-wrap">
       <table>
-        <thead><tr>#{th_cells}</tr></thead>
         <tbody>
           #{tr_rows}
         </tbody>
@@ -591,7 +610,8 @@ catalog_templates.each do |template|
 
     source_meta = selected_v.dig("meta", "source") || {}
     readme_html = render_readme_html(selected_v["readme_text"])
-    csv_preview_html = render_csv_preview(selected_v["example_csv_text"].to_s)
+    skip_rows = selected_v.dig("import_template", "csv_options", "skip_rows").to_i
+    csv_preview_html = render_csv_preview(selected_v["example_csv_text"].to_s, skip_rows: skip_rows)
 
     detail_html = <<~HTML
       <!doctype html>
@@ -658,9 +678,9 @@ catalog_templates.each do |template|
                   </div>
                 </div>
                 <div class="hero-cta__actions">
-                  <a class="btn btn--ghost" href="#csvPreviewPanel">View Example CSV</a>
-                  <a class="btn btn--ghost" href="#mappingPanel">View Column Mappings</a>
                   <a class="btn btn--ghost" href="#setupNotesPanel">View Export Instructions</a>
+                  <a class="btn btn--ghost" href="#mappingPanel">View Column Mappings</a>
+                  <a class="btn btn--ghost" href="#csvPreviewPanel">View Example CSV</a>
                 </div>
               </section>
 
@@ -717,7 +737,7 @@ catalog_templates.each do |template|
                 <!-- Example CSV preview -->
                 <div class="panel panel--full" id="csvPreviewPanel">
                   <div class="panel__header">
-                    <h2>Example CSV</h2>
+                    <h2>Example CSV#{skip_rows > 0 ? %( <span class="panel__header-note">first #{skip_rows} row#{skip_rows == 1 ? "" : "s"} skipped on import</span>) : ""}</h2>
                     <a class="btn btn--ghost btn--sm" href="#{h(selected_v['example_csv_url'] || '#')}" download="#{h("#{slug}-#{selected_version}-example.csv")}">Download</a>
                   </div>
                   <div class="panel__body--flush">

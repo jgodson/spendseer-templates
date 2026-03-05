@@ -76,8 +76,8 @@ module TemplateCatalog
         validate_schema(errors, target_path: version_dir.relative_path_from(root), schema: template_schema, payload: template_root, context: "template.yml")
 
         import_template = normalize_template(template_root)
-        readme = version_dir.join("README.md").read
-        example_csv = version_dir.join("example.csv").read
+        readme = version_dir.join("README.md").read(encoding: "utf-8")
+        example_csv = version_dir.join("example.csv").read(encoding: "utf-8")
 
         validate_entry(errors, root, slug, version, version_dir, meta, import_template, example_csv)
 

@@ -47,6 +47,28 @@
     });
   }
 
+  document.addEventListener("click", (event) => {
+    const btn = event.target.closest(".code-copy-btn");
+    if (!btn) return;
+    const code = btn.closest(".code-block")?.querySelector("pre code");
+    if (!code) return;
+    const originalText = btn.textContent;
+    copyText(code.textContent || "")
+      .then(() => {
+        btn.textContent = "Copied!";
+        btn.classList.add("copied");
+      })
+      .catch(() => {
+        btn.textContent = "Copy failed";
+      })
+      .finally(() => {
+        setTimeout(() => {
+          btn.textContent = originalText;
+          btn.classList.remove("copied");
+        }, 1800);
+      });
+  });
+
   const copyBtn = document.getElementById("copyBtn");
   const templateUrlCode = document.getElementById("templateUrlCode");
   if (copyBtn && templateUrlCode) {

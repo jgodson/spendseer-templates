@@ -1,8 +1,8 @@
-slug: wealthsimple-transactions
+slug: wealthsimple-credit-card
 version: v2
 name: Wealthsimple Credit Card
 author: Jason Godson
 summary: Template for Wealthsimple credit card statement CSV exports.
 source:
   institution: Wealthsimple
-  csv_export_path: Credit card statements -> Export CSV
+  csv_export_path: Log In -> Documents -> Download CSV

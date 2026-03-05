@@ -1,0 +1,17 @@
+import_template:
+  name: Wealthsimple Chequing Account
+  target_type: transactions
+  source_type: csv
+  field_mappings:
+    date: date
+    description: description
+    amount: amount
+  csv_options:
+    delimiter: ","
+    quote_char: '"'
+  transform_rules:
+    date_format: "%Y-%m-%d"
+    amount_sign: as_is
+  metadata:
+    community_slug: wealthsimple-chequing
+    community_version: v1

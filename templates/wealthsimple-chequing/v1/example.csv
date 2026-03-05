@@ -1,0 +1,5 @@
+date,transaction,description,amount,balance,currency
+2026-01-01,INT,Interest earned,9.16,6105.94,CAD
+2026-01-02,OBP_OUT,Online bill payment for BMO MASTERCARD,-959.86,4798.89,CAD
+2026-01-15,AFT_IN,Direct deposit from SHOPIFY INC.,2000.0,4483.95,CAD
+2026-01-28,E_TRFOUT,Interac e-Transfer Out,-2000.0,4008.95,CAD

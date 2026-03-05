@@ -1,0 +1,8 @@
+slug: wealthsimple-credit-card
+version: v1
+name: Wealthsimple Credit Card
+author: Jason Godson
+summary: Template for Wealthsimple credit card CSV exports.
+source:
+  institution: Wealthsimple
+  csv_export_path: Credit Card page -> View All -> Load More -> Run Script in Browser Console

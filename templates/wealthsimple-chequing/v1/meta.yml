@@ -1,0 +1,8 @@
+slug: wealthsimple-chequing
+version: v1
+name: Wealthsimple Chequing Account
+author: Jason Godson
+summary: Template for Wealthsimple Cash (chequing/savings) account CSV exports.
+source:
+  institution: Wealthsimple
+  csv_export_path: Log In -> Documents -> Download CSV

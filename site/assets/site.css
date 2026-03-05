@@ -437,6 +437,22 @@ h3 {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.panel__header-note {
+  font-size: 0.72rem;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--text-subtle);
+  background: var(--surface-2);
+  border: 1px solid var(--border-subtle);
+  border-radius: 100px;
+  padding: 0.1rem 0.5rem;
 }
 
 .panel__body {
@@ -920,6 +936,53 @@ code {
 
 .note-block a:hover {
   text-decoration: underline;
+}
+
+/* ── Fenced code blocks ── */
+.note-block .code-block {
+  position: relative;
+  background: #03060f;
+  border: 1px solid rgba(200, 163, 77, 0.25);
+  border-radius: var(--radius-sm);
+  margin: 0.5rem 0 0.65rem;
+  overflow: hidden;
+}
+
+.note-block pre {
+  margin: 0;
+  padding: 1rem 5rem 1rem 1.25rem;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  line-height: 1.65;
+  color: var(--gold);
+}
+
+.note-block pre code {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: inherit;
+  color: inherit;
+}
+
+.code-copy-btn {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  opacity: 0.45;
+  transition: opacity var(--transition), color var(--transition), background var(--transition), border-color var(--transition);
+}
+
+.code-block:hover .code-copy-btn {
+  opacity: 1;
+}
+
+.code-copy-btn.copied {
+  opacity: 1;
+  color: var(--green);
+  border-color: rgba(46, 204, 113, 0.3);
+  background: var(--green-soft);
 }
 
 .note-block .note-image {
