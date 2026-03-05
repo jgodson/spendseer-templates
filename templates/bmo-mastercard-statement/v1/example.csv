@@ -1,4 +1,6 @@
-Posting Date,Description,Transaction Amount,Category
-2026-01-03,Restaurant,-54.33,
-2026-01-05,Streaming Service,-12.99,
-2026-01-08,Return,18.50,
+Following data is valid as of 20260304225709:
+
+Item #,Card #,Transaction Date,Posting Date,Transaction Amount,Description
+1,'5524890020530218',20260103,20260103,-54.33,RESTAURANT HALIFAX NS
+2,'5524890020530218',20260105,20260105,-12.99,STREAMING SERVICE
+3,'5524890020530218',20260108,20260108,18.50,RETURN

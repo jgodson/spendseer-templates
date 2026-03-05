@@ -23,7 +23,19 @@
           "minProperties": 1,
           "additionalProperties": { "type": "string" }
         },
-        "csv_options": { "type": "object" },
+        "csv_options": {
+          "type": "object",
+          "properties": {
+            "delimiter": { "type": "string" },
+            "quote_char": { "type": "string" },
+            "skip_rows": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Number of leading rows to skip before the CSV header row"
+            }
+          },
+          "additionalProperties": true
+        },
         "transform_rules": { "type": "object" },
         "metadata": {
           "type": "object",

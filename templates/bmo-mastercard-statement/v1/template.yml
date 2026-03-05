@@ -9,6 +9,7 @@ import_template:
   csv_options:
     delimiter: ","
     quote_char: '"'
+    skip_rows: 2
   transform_rules:
     amount_sign: as_is
     category_type_default: expense
