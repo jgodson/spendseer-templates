@@ -247,7 +247,9 @@ module TemplateCatalog
   end
 
   def validate_example_csv(errors, relative:, template:, example_csv:)
-    csv = CSV.parse(example_csv.to_s, headers: true)
+    skip_rows = normalize_hash(template["csv_options"])["skip_rows"].to_i
+    raw = example_csv.to_s.lines.drop(skip_rows).join
+    csv = CSV.parse(raw, headers: true)
     headers = Array(csv.headers).map { |header| header.to_s.strip }.reject(&:empty?)
     if headers.empty?
       errors << "#{relative}: example.csv must include a header row"
