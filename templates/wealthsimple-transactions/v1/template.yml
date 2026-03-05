@@ -1,5 +1,5 @@
 import_template:
-  name: Wealthsimple Transactions CSV
+  name: Wealthsimple Transactions
   target_type: transactions
   source_type: csv
   field_mappings:

@@ -1,6 +1,6 @@
 slug: amex-activity
 version: v1
-name: American Express Activity CSV
+name: American Express
 author: Jason Godson
 summary: Template for American Express activity CSV exports.
 source:

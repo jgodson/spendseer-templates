@@ -1,5 +1,5 @@
 import_template:
-  name: Wealthsimple Credit Card Statement CSV
+  name: Wealthsimple Credit Card
   target_type: transactions
   source_type: csv
   field_mappings:

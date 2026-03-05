@@ -1,6 +1,6 @@
 slug: budget-example
 version: v1
-name: Budget Example CSV
+name: Budget Example
 author: Jason Godson
 summary: Mapping for budget spreadsheets with optional month splits.
 source:

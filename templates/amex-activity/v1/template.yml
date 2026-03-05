@@ -1,5 +1,5 @@
 import_template:
-  name: American Express Activity CSV
+  name: American Express
   target_type: transactions
   source_type: csv
   field_mappings:

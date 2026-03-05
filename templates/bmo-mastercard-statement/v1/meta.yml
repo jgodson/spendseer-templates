@@ -1,6 +1,6 @@
 slug: bmo-mastercard-statement
 version: v1
-name: BMO Mastercard Statement CSV
+name: BMO Mastercard
 author: Jason Godson
 summary: Template for BMO Mastercard statement CSV exports.
 source:

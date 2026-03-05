@@ -1,6 +1,6 @@
 slug: rbc-visa
 version: v1
-name: RBC Visa CSV
+name: RBC Visa
 author: Jason Godson
 summary: Template for RBC Visa transaction CSV exports.
 source:

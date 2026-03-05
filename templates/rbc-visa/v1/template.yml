@@ -1,5 +1,5 @@
 import_template:
-  name: RBC Visa CSV
+  name: RBC Visa
   target_type: transactions
   source_type: csv
   field_mappings:

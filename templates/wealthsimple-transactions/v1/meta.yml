@@ -1,6 +1,6 @@
 slug: wealthsimple-transactions
 version: v1
-name: Wealthsimple Transactions CSV
+name: Wealthsimple Transactions
 author: Jason Godson
 summary: Template for Wealthsimple transaction CSV exports.
 source:
