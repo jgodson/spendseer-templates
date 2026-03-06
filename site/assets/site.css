@@ -1042,9 +1042,8 @@ code {
   }
 
   .site-nav__actions {
-    width: 100%;
-    margin-left: 0;
-    justify-content: flex-start;
+    margin-left: auto;
+    justify-content: flex-end;
   }
 
   .site-nav__back,
