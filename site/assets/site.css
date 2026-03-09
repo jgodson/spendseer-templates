@@ -419,6 +419,7 @@ h3 {
   border-radius: var(--radius-lg);
   overflow: hidden;
   box-shadow: var(--shadow-sm);
+  min-width: 0;
 }
 
 .panel__header {
@@ -595,6 +596,7 @@ h3 {
 /* ── Detail layout ── */
 .detail-layout {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 1.25rem;
   max-width: 960px;
 }
@@ -606,13 +608,16 @@ h3 {
   box-shadow: var(--shadow-lg);
   padding: 1.1rem;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 1rem;
+  min-width: 0;
 }
 
 .detail-inner-grid {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
   gap: 1rem;
+  min-width: 0;
 }
 
 .panel--half {
@@ -723,6 +728,21 @@ table {
   border-collapse: collapse;
 }
 
+.table-scroll,
+.csv-preview-wrap {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+.table-scroll > table,
+.csv-preview-wrap > table {
+  min-width: 100%;
+  width: max-content;
+}
+
 th {
   font-family: var(--font-heading);
   font-size: 0.75rem;
@@ -790,7 +810,8 @@ code {
 
 /* ── Share snippet ── */
 .copy-snippet {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 0.5rem;
   background: var(--surface-2);
@@ -800,17 +821,24 @@ code {
   max-width: 100%;
 }
 
+.copy-snippet__track {
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+}
+
 .copy-snippet code {
+  display: block;
+  width: max-content;
+  min-width: 100%;
   background: none;
   border: none;
   padding: 0;
   font-size: 0.78rem;
   color: var(--text-muted);
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  flex: 1;
-  min-width: 0;
 }
 
 .share-link-btn {
@@ -819,7 +847,6 @@ code {
 
 /* ── CSV Preview table ── */
 .csv-preview-wrap {
-  overflow-x: auto;
   border-radius: 0;
 }
 

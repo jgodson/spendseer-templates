@@ -160,10 +160,12 @@ def render_markdown_table(lines, start_index, relative_prefix: nil)
   end.join
 
   table_html = <<~HTML
-    <table class="note-table">
-      <thead><tr>#{header_html}</tr></thead>
-      <tbody>#{body_html}</tbody>
-    </table>
+    <div class="table-scroll">
+      <table class="note-table">
+        <thead><tr>#{header_html}</tr></thead>
+        <tbody>#{body_html}</tbody>
+      </table>
+    </div>
   HTML
 
   [table_html.strip, index]
@@ -671,7 +673,9 @@ catalog_templates.each do |template|
                     <span class="hero-meta-row__label">Share Link</span>
                     <div class="hero-meta-row__value">
                       <div class="copy-snippet hero-copy-snippet">
-                        <code id="templateUrlCode">#{h(selected_v['details_url'] || template['details_url'] || '')}</code>
+                        <div class="copy-snippet__track">
+                          <code id="templateUrlCode">#{h(selected_v['details_url'] || template['details_url'] || '')}</code>
+                        </div>
                         <button class="btn btn--ghost btn--sm share-link-btn" id="copyBtn" type="button">Copy</button>
                       </div>
                     </div>
@@ -718,18 +722,20 @@ catalog_templates.each do |template|
                     <h2>Column mapping</h2>
                   </div>
                   <div class="panel__body--flush">
-                    <table>
-                      <thead>
-                        <tr>
-                          <th>Your CSV column</th>
-                          <th></th>
-                          <th>SpendSeer field</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        #{mapping_rows}
-                      </tbody>
-                    </table>
+                    <div class="table-scroll">
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>Your CSV column</th>
+                            <th></th>
+                            <th>SpendSeer field</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          #{mapping_rows}
+                        </tbody>
+                      </table>
+                    </div>
                     #{mapping_tip_html}
                   </div>
                 </div>
