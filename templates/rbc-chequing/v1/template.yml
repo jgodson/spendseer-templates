@@ -1,0 +1,17 @@
+import_template:
+  name: RBC Chequing Account
+  target_type: transactions
+  source_type: csv
+  field_mappings:
+    date: Transaction Date
+    description: Description 1
+    amount: CAD$
+  csv_options:
+    delimiter: ","
+    quote_char: '"'
+  transform_rules:
+    date_format: "%m/%d/%Y"
+    amount_sign: as_is
+  metadata:
+    community_slug: rbc-chequing
+    community_version: v1

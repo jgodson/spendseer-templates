@@ -1,0 +1,8 @@
+slug: rbc-chequing
+version: v1
+name: RBC Chequing Account
+author: Jason Godson
+summary: Template for RBC chequing account CSV exports.
+source:
+  institution: RBC
+  csv_export_path: Log In -> Select Account -> Download -> CSV
