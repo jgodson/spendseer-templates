@@ -11,7 +11,7 @@ import_template:
     quote_char: '"'
   transform_rules:
     date_format: "%Y-%m-%d"
-    amount_sign: negate
+    amount_sign: as_is
     category_type_default: expense
   metadata:
     community_slug: wealthsimple-credit-card

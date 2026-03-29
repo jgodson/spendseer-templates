@@ -25,5 +25,6 @@ Official Wealthsimple credit card statement exports with these columns:
 ## Notes
 
 - `transaction_date` is used as the import date.
+- Amounts are already signed correctly for SpendSeer imports: purchases are positive and refunds are negative.
 - No category column is mapped; use category rules to categorize.
 - `Payment` rows may appear and can be removed before import or skipped with skip rules if you do not want card payments included.
