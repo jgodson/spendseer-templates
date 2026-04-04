@@ -24,6 +24,6 @@ Wealthsimple Cash (chequing/savings) account transaction exports with these colu
 
 ## Notes
 
-- Amounts are already signed correctly: negative = debit/expense, positive = credit/income.
+- SpendSeer negates the exported bank-style amounts so outflows import as positive expenses and inflows import as negative amounts pending category-aware handling.
 - The `transaction` column contains short type codes (e.g. `AFT_IN`, `OBP_OUT`, `E_TRFIN`, `INT`) — category rules can use `description` for classification.
 - `balance` is ignored during import.
