@@ -23,6 +23,7 @@ RBC chequing account exports with these columns:
 ## Notes
 
 - The template imports `Transaction Date`, `Description 1`, and `CAD$`.
-- Amounts are already signed correctly: negative values are money out, positive values are money in.
+- RBC exports use bank-style signs: negative values are money out and positive values are money in.
+- SpendSeer negates imported amounts for this template so outgoing transactions align with expense-style amounts. Inflow rows such as payroll, autodeposit transfers, and interest are then categorized separately in preview.
 - `Account Number`, `Cheque Number`, `Description 2`, and `USD$` are ignored by this version.
 - If your export uses `USD$` or you want to use another source column, you can still import this template as a starting point and then adjust the mapping in SpendSeer before completing the import.

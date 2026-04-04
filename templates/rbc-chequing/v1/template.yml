@@ -11,7 +11,7 @@ import_template:
     quote_char: '"'
   transform_rules:
     date_format: "%m/%d/%Y"
-    amount_sign: as_is
+    amount_sign: negate
   metadata:
     community_slug: rbc-chequing
     community_version: v1
