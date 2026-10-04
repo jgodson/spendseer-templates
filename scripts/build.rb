@@ -379,8 +379,8 @@ end
 NAV_HOME = <<~HTML
   <nav class="site-nav">
     <a class="site-nav__brand" href="index.html">
-      <img class="brand-logo" src="assets/spendseer.png?v=BUILD_VERSION" alt="" aria-hidden="true" width="34" height="34" />
-      SpendSeer Templates
+      <img class="ss-logo" src="assets/spendseer-logo.webp?v=BUILD_VERSION" alt="SpendSeer" width="880" height="289">
+      <span class="brand-suffix">Templates</span>
     </a>
     <div class="site-nav__actions">
       <a class="site-nav__link site-nav__link--app" href="https://app.spendseer.com" target="_blank" rel="noopener noreferrer">Go To App</a>
@@ -392,8 +392,8 @@ HTML
 NAV_DETAIL = <<~HTML
   <nav class="site-nav">
     <a class="site-nav__brand" href="../../../index.html">
-      <img class="brand-logo" src="../../../assets/spendseer.png?v=BUILD_VERSION" alt="" aria-hidden="true" width="34" height="34" />
-      SpendSeer Templates
+      <img class="ss-logo" src="../../../assets/spendseer-logo.webp?v=BUILD_VERSION" alt="SpendSeer" width="880" height="289">
+      <span class="brand-suffix">Templates</span>
     </a>
     <div class="site-nav__actions">
       <a class="site-nav__back" href="../../../index.html">
@@ -549,6 +549,15 @@ index_html = <<~HTML
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1">
       <title>SpendSeer Community Templates</title>
+      <meta property="og:title" content="SpendSeer Community Templates" />
+      <meta property="og:description" content="Ready-to-use CSV import templates for SpendSeer. One click to install." />
+      <meta property="og:type" content="website" />
+      <meta property="og:url" content="https://templates.spendseer.com/" />
+      <meta property="og:image" content="https://templates.spendseer.com/assets/social-banner.jpg" />
+      <meta property="og:image:width" content="1200" />
+      <meta property="og:image:height" content="630" />
+      <meta property="og:image:alt" content="SpendSeer: personal finance, with a brighter perspective. Track spending, stay on budget, and build better habits over time." />
+      <meta name="twitter:card" content="summary_large_image" />
       <link rel="icon" href="assets/favicon.ico?v=BUILD_VERSION" sizes="any">
       <link rel="icon" href="assets/spendseer.png?v=BUILD_VERSION" type="image/png">
       <link rel="apple-touch-icon" href="assets/apple-touch-icon.png?v=BUILD_VERSION">

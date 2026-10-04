@@ -7,22 +7,36 @@
   <meta name="robots" content="noindex">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Source+Sans+3:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Shantell+Sans:wght@500;600;700;800&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="icon" href="/assets/favicon.ico?v=BUILD_VERSION" sizes="any">
   <link rel="icon" href="/assets/spendseer.png?v=BUILD_VERSION" type="image/png">
   <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png?v=BUILD_VERSION">
   <style>
+    /* Paper workbook error page ("Insight Lens"). */
     :root {
-      --bg: #070b15;
-      --surface: #121a2d;
-      --surface-strong: #182339;
-      --text: #edf2ff;
-      --muted: #b2bfd8;
-      --border: #2a3552;
-      --gold: #c8a34d;
-      --shadow: 0 22px 50px rgba(2, 6, 17, 0.55);
-      --font-heading: "Space Grotesk", sans-serif;
-      --font-body: "Source Sans 3", sans-serif;
+      --bg: #f1eadc;
+      --surface: #fdfbf6;
+      --text: #1f3047;
+      --muted: #5f6878;
+      --border: #e5dcca;
+      --border-strong: #d4c8b0;
+      --grid-line: rgba(110, 145, 185, 0.12);
+      --rule-line: rgba(110, 145, 185, 0.22);
+      --sheet-behind: #f5efe2;
+      --blue: #2f7bd0;
+      --blue-strong: #2266b3;
+      --teal: #1e8a80;
+      --navy: #1b3a5c;
+      --yellow: #f4c245;
+      --coral: #ef6461;
+      --sticky: #fbe6a2;
+      --tape-blue: rgba(146, 196, 236, 0.78);
+      --tape-pink: rgba(245, 168, 168, 0.75);
+      --tape-stripe: rgba(255, 255, 255, 0.26);
+      --tape-edge: polygon(0 12%, 2% 0, 98% 4%, 100% 18%, 98.5% 50%, 100% 84%, 97% 100%, 3% 96%, 0 88%, 1.5% 50%);
+      --shadow: 0 18px 34px -18px rgba(70, 52, 24, 0.38), 0 2px 4px rgba(70, 52, 24, 0.06);
+      --font-heading: "Shantell Sans", "Segoe Print", "Bradley Hand", cursive;
+      --font-body: "Nunito", "Avenir", "Helvetica Neue", sans-serif;
     }
 
     * {
@@ -34,73 +48,108 @@
       min-height: 100vh;
       font-family: var(--font-body);
       color: var(--text);
-      background:
-        radial-gradient(circle at 10% 10%, rgba(27, 53, 109, 0.44), transparent 36%),
-        radial-gradient(circle at 88% 15%, rgba(200, 163, 77, 0.24), transparent 30%),
-        linear-gradient(180deg, #0a1120 0%, var(--bg) 100%);
+      background-color: var(--bg);
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .42 0 0 0 0 .33 0 0 0 0 .18 0 0 0 .075 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
       display: grid;
       place-items: center;
-      padding: 20px;
+      padding: 28px 20px;
+    }
+
+    .page-shell {
+      width: 100%;
+      display: grid;
+      place-items: center;
     }
 
     .error-card {
-      width: min(960px, 100%);
+      width: min(980px, 100%);
       display: grid;
-      grid-template-columns: 1.1fr 0.9fr;
-      gap: 20px;
-      background: rgba(18, 26, 45, 0.85);
-      border: 1px solid var(--border);
-      border-radius: 24px;
-      box-shadow: var(--shadow);
-      padding: 20px;
-      backdrop-filter: blur(12px);
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 28px;
+      align-items: center;
     }
 
+    /* The main panel is a hand-cut sheet of grid paper taped to the desk. */
     .content-panel {
-      border-radius: 18px;
-      background: rgba(24, 35, 57, 0.5);
-      border: 1px solid var(--border);
-      padding: 32px;
+      position: relative;
+      padding: 34px;
       display: flex;
       flex-direction: column;
-      gap: 20px;
+      gap: 18px;
+      border: 1px solid var(--border);
+      border-radius: 0.55rem 0.9rem 0.6rem 0.8rem / 0.8rem 0.55rem 0.9rem 0.6rem;
+      background-color: var(--surface);
+      background-image:
+        linear-gradient(var(--grid-line) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+      background-size: 18px 18px;
+      box-shadow: 4px 5px 0 -1px var(--sheet-behind), 4px 5px 0 0 var(--border), var(--shadow);
+    }
+
+    .content-panel::before {
+      content: "";
+      position: absolute;
+      top: -0.7rem;
+      left: 50%;
+      width: 6.5rem;
+      height: 1.35rem;
+      margin-left: -3.25rem;
+      background: repeating-linear-gradient(-45deg, transparent 0 6px, var(--tape-stripe) 6px 9px), var(--tape-blue);
+      clip-path: var(--tape-edge);
+      transform: rotate(-2deg);
     }
 
     .brand {
       display: inline-flex;
       align-items: center;
       gap: 12px;
+      width: fit-content;
       color: inherit;
       text-decoration: none;
-      font-family: var(--font-heading);
-      font-weight: 700;
-      font-size: 1.2rem;
     }
 
-    .brand-logo {
-      width: 38px;
-      height: 38px;
+    .brand-logo,
+    .brand-mark {
+      width: 40px;
+      height: 40px;
       border-radius: 999px;
       object-fit: cover;
-      box-shadow: 0 8px 18px rgba(200, 163, 77, 0.3);
+      box-shadow: 0 4px 10px rgba(70, 52, 24, 0.25);
+    }
+
+    .ss-logo {
+      display: block;
+      width: auto;
+      height: 3.2rem;
+    }
+
+    .brand-suffix {
+      font-weight: 800;
+      color: var(--muted);
     }
 
     .eyebrow {
-      margin: 0;
-      font-size: 0.75rem;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--gold);
-      font-weight: 700;
+      display: inline-block;
+      width: fit-content;
+      margin: 6px 0 0;
+      padding: 0.1rem 0.95rem 0.05rem;
       font-family: var(--font-heading);
+      font-size: 1.05rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      font-variant-caps: all-small-caps;
+      color: var(--text);
+      background: repeating-linear-gradient(-45deg, transparent 0 6px, var(--tape-stripe) 6px 9px), var(--tape-pink);
+      clip-path: var(--tape-edge);
+      transform: rotate(-1.5deg);
     }
 
     h1 {
       margin: 0;
       font-family: var(--font-heading);
       font-size: clamp(1.8rem, 4vw, 2.5rem);
-      line-height: 1.1;
-      letter-spacing: -0.01em;
+      font-weight: 800;
+      line-height: 1.15;
     }
 
     .lead {
@@ -114,164 +163,197 @@
       display: flex;
       flex-wrap: wrap;
       gap: 12px;
-      margin-top: 8px;
+      margin-top: 4px;
     }
 
     .btn {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 8px;
       min-height: 44px;
       padding: 0 20px;
-      border-radius: 12px;
-      border: 1px solid var(--border);
-      font-weight: 700;
-      font-size: 0.9rem;
+      border-radius: 0.75rem;
+      border: 1px solid var(--border-strong);
+      font-weight: 800;
+      font-size: 0.95rem;
       text-decoration: none;
-      font-family: var(--font-heading);
-      transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
-    }
-
-    .btn-primary {
-      background: linear-gradient(135deg, var(--gold), #a87c2b);
-      color: #0b111f;
-      border-color: #be9238;
-      box-shadow: 0 10px 24px rgba(200, 163, 77, 0.25);
-    }
-
-    .btn-secondary {
-      background: rgba(18, 26, 45, 0.92);
-      color: var(--text);
+      transition: transform 0.15s ease, background 0.15s ease;
     }
 
     .btn:hover {
       transform: translateY(-1px);
-      border-color: #495779;
+    }
+
+    .btn-primary {
+      background: var(--blue);
+      border-color: var(--blue-strong);
+      color: #fff;
+      box-shadow: 0 2px 0 #1a4f8c;
     }
 
     .btn-primary:hover {
-      border-color: #d7b264;
-      box-shadow: 0 14px 28px rgba(200, 163, 77, 0.32);
+      background: var(--blue-strong);
     }
 
+    .btn-secondary {
+      background: var(--surface);
+      color: var(--text);
+      box-shadow: 0 2px 0 var(--border-strong);
+    }
+
+    .btn-secondary:hover {
+      background: #fdf1cf;
+    }
+
+    /* Suggestions are a ruled checklist. */
     .help-box {
-      border-radius: 14px;
-      padding: 20px;
-      background: rgba(27, 53, 109, 0.15);
-      border: 1px solid rgba(200, 163, 77, 0.2);
+      padding: 14px 16px;
+      border-radius: 0.6rem;
+      background-color: #fdfbf6;
+      background-image: repeating-linear-gradient(transparent 0 1.6rem, var(--rule-line) 1.6rem calc(1.6rem + 1px));
+      border: 1px dashed var(--border-strong);
     }
 
     .help-box h2 {
-      margin: 0 0 10px;
-      font-size: 0.9rem;
-      color: var(--gold);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
+      margin: 0 0 6px;
+      font-family: var(--font-heading);
+      font-size: 1.05rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      font-variant-caps: all-small-caps;
+      color: var(--coral);
     }
 
     .help-box ul {
       margin: 0;
-      padding-left: 18px;
+      padding: 0;
+      list-style: none;
       color: var(--muted);
-      line-height: 1.6;
-      font-size: 0.95rem;
+      line-height: 1.6rem;
+      font-size: 0.97rem;
     }
 
+    .help-box li {
+      position: relative;
+      padding-left: 1.7rem;
+    }
+
+    .help-box li::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0.35rem;
+      width: 0.9rem;
+      height: 0.9rem;
+      border: 2px solid var(--blue);
+      border-radius: 0.2rem;
+      transform: rotate(-4deg);
+    }
+
+    .help-box li:nth-child(2)::before { border-color: var(--teal); }
+    .help-box li:nth-child(3)::before { border-color: var(--coral); }
+
+    /* The status is a big sticky note. */
     .status-panel {
-      border-radius: 18px;
-      background: linear-gradient(160deg, #0d1526 0%, #111f39 100%);
-      border: 1px solid var(--border);
-      padding: 32px;
+      position: relative;
+      padding: 34px 28px 28px;
       display: flex;
       flex-direction: column;
-      justify-content: space-between;
-      position: relative;
-      overflow: hidden;
+      gap: 18px;
+      background: var(--sticky);
+      color: #2b3346;
+      border-radius: 0.2rem 0.2rem 1.2rem 0.2rem;
+      box-shadow: 0 20px 26px -16px rgba(60, 40, 10, 0.5);
+      transform: rotate(2deg);
+    }
+
+    .status-panel::before {
+      content: "";
+      position: absolute;
+      top: -0.7rem;
+      left: 50%;
+      width: 5rem;
+      height: 1.35rem;
+      margin-left: -2.5rem;
+      background: var(--tape-pink);
+      clip-path: var(--tape-edge);
+      transform: rotate(4deg);
     }
 
     .status-panel::after {
-      content: "";
-      position: absolute;
-      bottom: -40px;
-      right: -40px;
-      width: 180px;
-      height: 180px;
-      background: radial-gradient(circle, rgba(200, 163, 77, 0.15) 0%, transparent 70%);
-      pointer-events: none;
+      display: none;
     }
 
     .status-chip {
-      display: inline-flex;
-      align-items: center;
       width: fit-content;
-      border-radius: 999px;
-      padding: 5px 12px;
-      background: rgba(27, 53, 109, 0.4);
-      border: 1px solid rgba(120, 146, 190, 0.2);
-      color: #9fb2d6;
+      font-family: var(--font-heading);
+      font-size: 1rem;
       font-weight: 700;
-      font-size: 0.7rem;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
+      letter-spacing: 0.05em;
+      font-variant-caps: all-small-caps;
+      color: #5f5a4e;
     }
 
     .status-code-wrap {
-      margin: 30px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
     }
 
     .status-code {
       margin: 0;
       font-family: var(--font-heading);
-      font-size: 6rem;
-      line-height: 0.8;
-      font-weight: 700;
-      color: #ffffff;
-      opacity: 0.9;
+      font-size: clamp(4rem, 9vw, 6rem);
+      font-weight: 800;
+      line-height: 1;
+      color: var(--coral);
     }
 
     .status-name {
-      margin: 15px 0 10px;
+      margin: 0;
+      font-family: var(--font-heading);
+      font-size: 1.35rem;
       font-weight: 700;
-      font-size: 1.1rem;
-      color: var(--text);
     }
 
     .status-copy {
-      margin: 0;
-      color: var(--muted);
-      line-height: 1.5;
-      font-size: 1rem;
+      margin: 6px 0 0;
+      color: #4d4535;
+      line-height: 1.55;
     }
 
     .status-meta {
-      border-radius: 14px;
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid rgba(255, 255, 255, 0.05);
-      padding: 16px;
+      padding-top: 14px;
+      border-top: 1px dashed rgba(60, 40, 10, 0.25);
     }
 
     .status-meta-label {
-      font-size: 0.75rem;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: var(--gold);
+      font-family: var(--font-heading);
+      font-size: 0.95rem;
       font-weight: 700;
-      margin-bottom: 6px;
+      letter-spacing: 0.04em;
+      font-variant-caps: all-small-caps;
+      color: #5f5a4e;
     }
 
     .status-meta-value {
-      font-size: 0.9rem;
-      color: var(--muted);
-      line-height: 1.4;
+      margin-top: 4px;
+      font-size: 0.92rem;
+      color: #4d4535;
+      line-height: 1.5;
     }
 
-    @media (max-width: 860px) {
+    @media (max-width: 820px) {
       .error-card {
         grid-template-columns: 1fr;
       }
+
+      .content-panel {
+        padding: 26px 20px;
+      }
+
       .status-panel {
-        min-height: 300px;
+        transform: rotate(1deg);
       }
     }
   </style>
@@ -280,8 +362,7 @@
   <main class="error-card">
     <div class="content-panel">
       <a class="brand" href="/">
-        <img class="brand-logo" src="/assets/spendseer.png?v=BUILD_VERSION" alt="" aria-hidden="true">
-        <span>SpendSeer Templates</span>
+        <img class="ss-logo" src="/assets/spendseer-logo.webp?v=BUILD_VERSION" alt="SpendSeer" width="880" height="289"> <span class="brand-suffix">Templates</span>
       </a>
 
       <p class="eyebrow">404 Error</p>
