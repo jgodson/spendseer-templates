@@ -563,6 +563,7 @@ index_html = <<~HTML
       <link rel="apple-touch-icon" href="assets/apple-touch-icon.png?v=BUILD_VERSION">
       <link rel="stylesheet" href="assets/site.css?v=BUILD_VERSION">
       <script src="assets/catalog-page.js?v=BUILD_VERSION" defer></script>
+      <script defer src="/u.js" data-website-id="d23fe433-695a-472b-8e1e-d13d673a7878"></script>
     </head>
     <body>
       #{NAV_HOME.strip}
@@ -636,6 +637,7 @@ catalog_templates.each do |template|
           <link rel="apple-touch-icon" href="../../../assets/apple-touch-icon.png?v=BUILD_VERSION">
           <link rel="stylesheet" href="../../../assets/site.css?v=BUILD_VERSION">
           <script src="../../../assets/template-detail-page.js?v=BUILD_VERSION" defer></script>
+          <script defer src="/u.js" data-website-id="d23fe433-695a-472b-8e1e-d13d673a7878"></script>
         </head>
         <body>
           #{NAV_DETAIL.strip}
